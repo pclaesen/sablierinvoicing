@@ -5,43 +5,66 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ud60x18 } from "@prb/math/src/UD60x18.sol";
 import { ISablierV2LockupLinear } from "@sablier/v2-core/src/interfaces/ISablierV2LockupLinear.sol";
 import { Broker, LockupLinear } from "@sablier/v2-core/src/types/DataTypes.sol";
+import { ISablierV2BatchLockup } from "@sablier/v2-periphery/src/interfaces/ISablierV2BatchLockup.sol";
+import { BatchLockup } from "@sablier/v2-periphery/src/types/DataTypes.sol";
 
-/// @title StreamCreator
-/// @dev This contract allows users to create Sablier streams using the Lockup Linear contract.
-contract StreamCreator {
-    IERC20 public constant DAI = IERC20(0x68194a729C2450ad26072b3D33ADaCbcef39D574);
-    ISablierV2LockupLinear public immutable SABLIER;
+contract BatchLLStreamCreator {
+    // Sepolia addresses
+    IERC20 public constant USDC = IERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
+    // See https://docs.sablier.com/contracts/v2/deployments for all deployments
+    ISablierV2LockupLinear public constant LOCKUP_LINEAR =
+        ISablierV2LockupLinear(0x3E435560fd0a03ddF70694b35b673C25c65aBB6C);
+    ISablierV2BatchLockup public constant BATCH_LOCKUP =
+        ISablierV2BatchLockup(0x04A9c14b7a000640419aD5515Db4eF4172C00E31);
 
-    constructor(ISablierV2LockupLinear sablier) {
-        SABLIER = sablier;
-    }
+    /// @dev For this function to work, the sender must have approved this dummy contract to spend USDC.
+    function batchCreateStreams(
+        uint128 perStreamAmount,
+        address[] memory _recipientsArray
+        ) public returns (uint256[] memory streamIds) {
+        // Create a batch of two streams
+        uint256 batchSize = 2;
 
-    /// @dev Before calling this function, the user must first approve this contract to spend the tokens from the user's
-    /// address.
-    function createLockupLinearStream(uint256 totalAmount) external returns (uint256 streamId) {
-        // Transfer the provided amount of DAI tokens to this contract
-        DAI.transferFrom(msg.sender, address(this), totalAmount);
+        // Calculate the combined amount of USDC assets to transfer to this contract
+        uint256 transferAmount = perStreamAmount * batchSize;
 
-        // Approve the Sablier contract to spend DAI
-        DAI.approve(address(SABLIER), totalAmount);
+        // Transfer the provided amount of USDC tokens to this contract
+        USDC.transferFrom(msg.sender, address(this), transferAmount);
 
-        // Declare the params struct
-        LockupLinear.CreateWithDurations memory params;
+        // Approve the Batch contract to spend USDC
+        USDC.approve({ spender: address(BATCH_LOCKUP), value: transferAmount });
 
-        // Declare the function parameters
-        params.sender = msg.sender; // The sender will be able to cancel the stream
-        params.recipient = address(0xcafe); // The recipient of the streamed assets
-        params.totalAmount = uint128(totalAmount); // Total amount is the amount inclusive of all fees
-        params.asset = DAI; // The streaming asset
-        params.cancelable = true; // Whether the stream will be cancelable or not
-        params.transferable = true; // Whether the stream will be transferable or not
-        params.durations = LockupLinear.Durations({
-            cliff: 4 weeks, // Assets will be unlocked only after 4 weeks
+        // Declare the first stream in the batch
+        BatchLockup.CreateWithDurationsLL memory stream0;
+        stream0.sender = msg.sender; // The sender to stream the assets, he will be able to cancel the stream
+        stream0.recipient = address(_recipientsArray[0]); // The recipient of the streamed assets
+        stream0.totalAmount = perStreamAmount; // The total amount of each stream, inclusive of all fees
+        stream0.cancelable = true; // Whether the stream will be cancelable or not
+        stream0.transferable = false; // Whether the recipient can transfer the NFT or not
+        stream0.durations = LockupLinear.Durations({
+            cliff: 0 seconds, // Assets will be unlocked only after 4 weeks
             total: 52 weeks // Setting a total duration of ~1 year
          });
-        params.broker = Broker(address(0), ud60x18(0)); // Optional parameter for charging a fee
+        stream0.broker = Broker(address(0), ud60x18(0)); // Optional parameter left undefined
 
-        // Create the Sablier stream using a function that sets the start time to `block.timestamp`
-        streamId = SABLIER.createWithDurations(params);
+        // Declare the second stream in the batch
+        BatchLockup.CreateWithDurationsLL memory stream1;
+        stream1.sender = msg.sender; // The sender to stream the assets, he will be able to cancel the stream
+        stream1.recipient = address(_recipientsArray[1]); // The recipient of the streamed assets
+        stream1.totalAmount = perStreamAmount; // The total amount of each stream, inclusive of all fees
+        stream1.cancelable = false; // Whether the stream will be cancelable or not
+        stream1.transferable = false; // Whether the recipient can transfer the NFT or not
+        stream1.durations = LockupLinear.Durations({
+            cliff: 0 seconds, // Assets will be unlocked only after 4 weeks
+            total: 52 weeks // Setting a total duration of ~1 year
+         });
+        stream1.broker = Broker(address(0), ud60x18(0)); // Optional parameter left undefined
+
+        // Fill the batch param
+        BatchLockup.CreateWithDurationsLL[] memory batch = new BatchLockup.CreateWithDurationsLL[](batchSize);
+        batch[0] = stream0;
+        batch[1] = stream1;
+
+        streamIds = BATCH_LOCKUP.createWithDurationsLL(LOCKUP_LINEAR, USDC, batch);
     }
 }
