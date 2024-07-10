@@ -19,7 +19,7 @@ contract StreamCreatorTest is Test {
     address internal bob = address(0x2000);
     address internal charlie = address(0x3000); 
 
-    address[] recipientsArray; 
+    address[] internal recipientsArray;
     
 
     function setUp() public {
@@ -48,12 +48,33 @@ contract StreamCreatorTest is Test {
     function test_CreateStream() public {
         recipientsArray = [bob, charlie];
         uint256[] memory streamIds = creator.batchCreateStreams(10e6, recipientsArray);
-        console2.log("Stream 0 ID",streamIds[0]);
-        console2.log("Stream 1 ID",streamIds[1]);
+        // console2.log("Stream 0 ID",streamIds[0]);
+        // console2.log("Stream 1 ID",streamIds[1]);
     }
 
     function testWithdrawFromStream() public {
         test_CreateStream();
+        vm.warp(block.timestamp + 5 days);
+        vm.startPrank(bob);
+        sablier.withdrawMax(10, bob);
+        vm.stopPrank();
+
+        console2.log("Amount withdrawn",sablier.getWithdrawnAmount(10));
+
+        vm.warp(block.timestamp + 10 days);
+        vm.startPrank(bob);
+        sablier.withdrawMax(10, bob);
+        vm.stopPrank();
+
+        console2.log("Amount withdrawn",sablier.getWithdrawnAmount(10));
+
+        vm.warp(block.timestamp + 20 days);
+        vm.startPrank(bob);
+        sablier.withdrawMax(10, bob);
+        vm.stopPrank();
+
+        console2.log("Amount withdrawn",sablier.getWithdrawnAmount(10));
+
         vm.warp(block.timestamp + 30 days);
         vm.startPrank(bob);
         sablier.withdrawMax(10, bob);
