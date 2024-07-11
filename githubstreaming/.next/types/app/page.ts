@@ -1,4 +1,4 @@
-// File: /Users/pieterclaesen/blockchain/erc20stream/githubstreaming/app/page.js
+// File: /workspaces/erc20stream/githubstreaming/app/page.js
 import * as entry from '../../../app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
