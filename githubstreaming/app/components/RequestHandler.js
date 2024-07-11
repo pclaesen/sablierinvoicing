@@ -58,6 +58,9 @@ const RequestHandler = ({ account }) => {
         const request = await requestClient.createRequest(requestCreateParameters);
         const confirmedRequestData = await request.waitForConfirmation();
         console.log(confirmedRequestData);
+        console.log("Marking request paid...");
+        await request.declarePaymentReceived();
+        console.log("Request is now marked as paid!");
       } catch (error) {
         console.error('Request handling failed', error);
       }
