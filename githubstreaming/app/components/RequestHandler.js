@@ -64,7 +64,7 @@ const RequestHandler = ({ account }) => {
         const request = await requestClient.createRequest(requestCreateParameters);
         const confirmedRequestData = await request.waitForConfirmation(5);
         console.log(confirmedRequestData);
-        await request.declareReceivedPayment("pn-any-declarative", "declareReceivedPayment", { amount: "10000000" });
+        await request.declareReceivedPayment( "10000000", "test", requestCreateParameters.signer);
         console.log("Declared paid");
       } catch (error) {
         console.error('Request handling failed', error);
@@ -89,7 +89,7 @@ const RequestHandler = ({ account }) => {
     // const requestDatas = requests.map((request) => request.getData());
     // console.log(requestDatas);
     const fetchedRequestData = await requestClient.fromRequestId(
-          "016ca6d20edfe7a315b398bc5a49f44386a0238e76dc7abc7b6d4b01e47fc09ee8",
+          "014cdf7d6a3d4f2c5c4b2a6b50149fc4acff9986c36020c8307ea2a7f17a023131",
         );
     const requestData = fetchedRequestData.getData();
     console.log(requestData);
@@ -108,7 +108,7 @@ const RequestHandler = ({ account }) => {
       },
       signatureProvider: web3Provider,
     });
-    const request = await requestClient.fromRequestId("016ca6d20edfe7a315b398bc5a49f44386a0238e76dc7abc7b6d4b01e47fc09ee8");
+    const request = await requestClient.fromRequestId("014cdf7d6a3d4f2c5c4b2a6b50149fc4acff9986c36020c8307ea2a7f17a023131");
     let requestData = request.getData();
 
     while (requestData.balance?.balance < requestData.expectedAmount) {
@@ -136,7 +136,7 @@ const RequestHandler = ({ account }) => {
       Handle Request
     </button><br />
     <button className={styles.button} onClick={fetchDetails}>
-    Fetch details
+    Fetch Request ID details
     </button><br />
     <button className={styles.button} onClick={checkItOut}>
     Check It Out
