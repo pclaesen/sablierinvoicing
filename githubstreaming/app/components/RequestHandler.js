@@ -10,7 +10,7 @@ const RequestHandler = ({ account }) => {
     if (typeof window.ethereum !== 'undefined') {
       try {
         console.log(account);
-        const web3Provider = new Web3SignatureProvider(window.ethereum);
+        const web3Provider = new Web3SignatureProvider(window.ethereum); 
         const requestClient = new RequestNetwork({
           nodeConnectionConfig: {
             baseURL: 'https://sepolia.gateway.request.network/',
@@ -59,7 +59,6 @@ const RequestHandler = ({ account }) => {
           },
           
         };
-        console.log(requestCreateParameters.signer);
 
         const request = await requestClient.createRequest(requestCreateParameters);
         const confirmedRequestData = await request.waitForConfirmation(5);
@@ -72,7 +71,7 @@ const RequestHandler = ({ account }) => {
     }
   };
 
-  async function fetchDetails() {
+  async function payRequestFromId() {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const web3Provider = new Web3SignatureProvider(window.ethereum);
     const requestClient = new RequestNetwork({
@@ -89,7 +88,7 @@ const RequestHandler = ({ account }) => {
     // const requestDatas = requests.map((request) => request.getData());
     // console.log(requestDatas);
     const fetchedRequestData = await requestClient.fromRequestId(
-          "014cdf7d6a3d4f2c5c4b2a6b50149fc4acff9986c36020c8307ea2a7f17a023131",
+          "01bb88b4970aa01b00e14f4bdf14297f5f742379b01b4900acc94b00370b2da968",
         );
     const requestData = fetchedRequestData.getData();
     console.log(requestData);
@@ -99,8 +98,7 @@ const RequestHandler = ({ account }) => {
 
   }
 
-  async function checkItOut() {
-    //const provider = new ethers.providers.Web3Provider(window.ethereum);
+  async function checkIfRequestIsPaid() {
     const web3Provider = new Web3SignatureProvider(window.ethereum);
     const requestClient = new RequestNetwork({
       nodeConnectionConfig: { 
@@ -108,7 +106,7 @@ const RequestHandler = ({ account }) => {
       },
       signatureProvider: web3Provider,
     });
-    const request = await requestClient.fromRequestId("014cdf7d6a3d4f2c5c4b2a6b50149fc4acff9986c36020c8307ea2a7f17a023131");
+    const request = await requestClient.fromRequestId("01bb88b4970aa01b00e14f4bdf14297f5f742379b01b4900acc94b00370b2da968");
     let requestData = request.getData();
 
     while (requestData.balance?.balance < requestData.expectedAmount) {
@@ -118,7 +116,7 @@ const RequestHandler = ({ account }) => {
     console.log("should be paid");
   }
 
-  async function logIdData() {
+  async function logRequestIdData() {
     const web3Provider = new Web3SignatureProvider(window.ethereum);
     const requestClient = new RequestNetwork({
       nodeConnectionConfig: { 
@@ -126,23 +124,23 @@ const RequestHandler = ({ account }) => {
       },
       signatureProvider: web3Provider,
     });
-    const request = await requestClient.fromRequestId("016ca6d20edfe7a315b398bc5a49f44386a0238e76dc7abc7b6d4b01e47fc09ee8");
+    const request = await requestClient.fromRequestId("01bb88b4970aa01b00e14f4bdf14297f5f742379b01b4900acc94b00370b2da968");
     let requestData = request.getData();
     console.log(requestData);
   }
 
   return (
     <><button className={styles.button} onClick={handleRequest}>
-      Handle Request
+      Create Request and mark paid
     </button><br />
-    <button className={styles.button} onClick={fetchDetails}>
-    Fetch Request ID details
+    <button className={styles.button} onClick={payRequestFromId}>
+    Pay Request from Request ID
     </button><br />
-    <button className={styles.button} onClick={checkItOut}>
-    Check It Out
+    <button className={styles.button} onClick={checkIfRequestIsPaid}>
+    Check if Request is paid
     </button><br />
-    <button className={styles.button} onClick={logIdData}>
-    Log ID data
+    <button className={styles.button} onClick={logRequestIdData}>
+    Log Request ID data
     </button>
     </>
   );

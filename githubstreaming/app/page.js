@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import WalletConnectButton from './components/WalletConnectButton';
 import RequestHandler from './components/RequestHandler';
+import InputForm from './components/InputForm';
 import styles from './page.module.css';
 
 const Page = () => {
@@ -9,6 +10,10 @@ const Page = () => {
 
   const handleAccountChange = (account) => {
     setAccount(account);
+  };
+
+  const handleSubmit = (inputValue) => {
+    console.log('Submitted value:', inputValue);
   };
 
   return (
@@ -23,6 +28,7 @@ const Page = () => {
           <p>Connected Account: {account}</p>
         </div>
       )}
+      <InputForm onSubmit={handleSubmit} />
     </div>
   );
 };
