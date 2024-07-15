@@ -5,9 +5,11 @@ import { ethers } from 'ethers';
 
 import { streamCreatorABI } from '../abi/streamCreatorABI';
 
-const contractAddress = "";
-
-const streamCreatorContract = new ethers.Contract(streamCreatorABI, contractAddress, signer);
+const contractAddress = "0xbE431CeacE289458dE2Eca8FAc30854B2a4aDe31";
+const provider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = provider.getSigner();
+const streamCreatorContract = new ethers.Contract(contractAddress, streamCreatorABI, signer);
+export const contractWithSigner = streamCreatorContract.connect(signer);
 
 const InputForm = ({ onSubmit }) => {
   const [githubHandle, setGithubHandle] = useState('sablier-labs');
@@ -39,7 +41,7 @@ const InputForm = ({ onSubmit }) => {
     );
   };
 
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = async() => {
     const addresses = teamMembers.map(member => member.walletAddress);
     setTeamMembersAddress(addresses);
     console.log('Final submitted team members:', teamMembers);
@@ -47,7 +49,11 @@ const InputForm = ({ onSubmit }) => {
     // Additional logic for final submission can be added here
     if (typeof window.ethereum !== 'undefined') {
       try {
-        
+        let approve = await underlyingUSDC.approve(contractAddress, amountToApprove);
+        await approve.wait();
+        let createTheStreams = contractWithSigner.batchCreateStreams(10e6, teamMembersAddress[0], teamMembersAddress[1]);
+        await createTheStreams(2);
+        console.log("streams created");
     
       } catch (error) {
         console.error('Request handling failed', error);
