@@ -1,3 +1,4 @@
+// WithdrawHandler.js
 import React, { useState } from 'react';
 import { ethers, BigNumber } from 'ethers';
 import styles from '../page.module.css';
@@ -5,7 +6,7 @@ import { sablierLockupLinearABI } from '../abi/SablierLockupLinearABI';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import { RequestNetwork, Types, Utils } from '@requestnetwork/request-client.js';
 
-const WithdrawalHandler = ({ account, setStreamId }) => {
+const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) => {
   const [streamId, setLocalStreamId] = useState('');
   const [withdrawnAmount, setWithdrawnAmount] = useState('');
 
@@ -66,8 +67,9 @@ const WithdrawalHandler = ({ account, setStreamId }) => {
         const streamIdObject = {
           sender: streamIdDetails[0],
           recipient: streamIdDetails[1],
+          // streamIdDetails[2], = deposited amount
           tokenAddress: streamIdDetails[5]
-        };
+        }
         console.log(streamIdObject);
 
         const tempRequestClient = new RequestNetwork({
@@ -120,6 +122,9 @@ const WithdrawalHandler = ({ account, setStreamId }) => {
         const confirmedRequestData = await request.waitForConfirmation();
         console.log("Successfully created the request");
         console.log(confirmedRequestData);
+
+        // Update the state in the parent component with confirmedRequestData
+        setConfirmedRequestData(confirmedRequestData);
       } catch (error) {
         console.error('Request handling failed', error);
       }
@@ -129,7 +134,6 @@ const WithdrawalHandler = ({ account, setStreamId }) => {
   };
 
   return (
-    <>
     <div className={styles.withdrawal}>
       <input
         type="number"
@@ -140,14 +144,13 @@ const WithdrawalHandler = ({ account, setStreamId }) => {
       />
       <button
         onClick={withdraw}
-        className={styles.buttonWithdrawalSubmit}
+        className={styles.button}
         disabled={!account}
         style={{ backgroundColor: !account ? 'grey' : '' }}
       >
         Withdraw
       </button>
     </div>
-    </>
   );
 };
 

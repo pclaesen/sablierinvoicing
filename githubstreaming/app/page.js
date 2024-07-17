@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import WalletConnectButton from './components/WalletConnectButton';
-import RequestHandler from './components/RequestHandler';
+import ParentComponent from './components/ParentComponent';
 import WithdrawalHandler from './components/WithdrawalHandler';
 import styles from './page.module.css';
 
@@ -26,17 +26,13 @@ const Page = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <WalletConnectButton onAccountChange={handleAccountChange} />
-        {/* {account && (
-          <div className={styles['account-info']}>
-            <p>Connected Account: {account}</p>
-          </div>
-        )} */}
       </div>
-      <main className={styles.main}>
-        {/* <RequestHandler account={account} streamId={streamId} /> */}
+      {/* <main className={styles.main}>
         <WithdrawalHandler account={account} setStreamId={setStreamId} />
-      </main>
+      </main> */}
+    <ParentComponent account={account} />
     </div>
+    
     <div>
       {account && (
           <div className={styles['account-info']}>
