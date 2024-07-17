@@ -15,10 +15,19 @@
 }
 
 .page_button__52WaL {
-  padding: 10px 20px;
+  float: left;
+  padding: 0px 20px;
   font-size: 16px;
   cursor: pointer;
-  margin: 5px;
+  margin: 1px;
+}
+
+.page_buttonWithdrawalSubmit__EhLZh {
+  float: right;
+  padding: 10px 10px;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 1px;
 }
 
 .page_table__qtljL {
@@ -50,13 +59,17 @@
 }
 
 .page_account-info__T7pNk {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 10px;
-  background-color: #f4f4f4;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  .page_connectedAccount__mYQKw {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background-color: #f4f4f4;
+    border: 1px solid #ddd;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 1000;
+  }
 }
 
 .page_input-full-width__3SjOZ {
@@ -70,3 +83,8 @@
   margin-top: 20px;
 }
 
+.page_withdrawal__AESBh {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}

@@ -37,13 +37,15 @@ const WalletConnectButton = ({ onAccountChange }) => {
   }, [wallet, onAccountChange]);
 
   return (
-    <button
-      className={styles.button}
-      disabled={connecting}
-      onClick={() => (wallet ? disconnect(wallet) : connect())}
-    >
-      {connecting ? 'Connecting...' : wallet ? 'Disconnect' : 'Connect Wallet'}
-    </button>
+    <div>
+      <button
+        className={styles.button}
+        disabled={connecting}
+        onClick={() => (wallet ? disconnect(wallet) : connect())}
+      >
+        {connecting ? 'Connecting...' : wallet ? 'Disconnect' : 'Connect Wallet'}
+      </button>
+    </div>
   );
 };
 

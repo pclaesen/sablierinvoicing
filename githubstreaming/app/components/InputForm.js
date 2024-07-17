@@ -4,17 +4,11 @@ import axios from 'axios';
 import { ethers } from 'ethers';
 
 import { streamCreatorABI } from '../abi/streamCreatorABI';
-
-const contractAddress = "0xbE431CeacE289458dE2Eca8FAc30854B2a4aDe31";
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const signer = provider.getSigner();
-const streamCreatorContract = new ethers.Contract(contractAddress, streamCreatorABI, signer);
-export const contractWithSigner = streamCreatorContract.connect(signer);
+import { ERC20ABI } from '../abi/ERC20ABI';
 
 const InputForm = ({ onSubmit }) => {
   const [githubHandle, setGithubHandle] = useState('sablier-labs');
   const [teamMembers, setTeamMembers] = useState([]);
-  const [teamMembersAddress, setTeamMembersAddress] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,16 +37,23 @@ const InputForm = ({ onSubmit }) => {
 
   const handleFinalSubmit = async() => {
     const addresses = teamMembers.map(member => member.walletAddress);
-    setTeamMembersAddress(addresses);
     console.log('Final submitted team members:', teamMembers);
     console.log('Team members addresses:', addresses);
+    console.log('Address 0',addresses[0]);
     // Additional logic for final submission can be added here
     if (typeof window.ethereum !== 'undefined') {
       try {
-        let approve = await underlyingUSDC.approve(contractAddress, amountToApprove);
+        const contractAddress = "0xbE431CeacE289458dE2Eca8FAc30854B2a4aDe31";
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const streamCreatorContract = new ethers.Contract(contractAddress, streamCreatorABI, signer);
+        const contractWithSigner = streamCreatorContract.connect(signer);
+        const USDCaddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"; //USDC main contract address on Sepolia
+        const underlyingUSDC = new ethers.Contract(USDCaddress, ERC20ABI, signer);
+        let approve = await underlyingUSDC.approve(contractAddress, 10000e6);
         await approve.wait();
-        let createTheStreams = contractWithSigner.batchCreateStreams(10e6, teamMembersAddress[0], teamMembersAddress[1]);
-        await createTheStreams(2);
+        let createTheStreams = await contractWithSigner.batchCreateStreams(10e6, [addresses[0], addresses[1]]);
+        await createTheStreams.wait();
         console.log("streams created");
     
       } catch (error) {

@@ -1,35 +1,50 @@
-"use client"
-import React, { useState } from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import WalletConnectButton from './components/WalletConnectButton';
 import RequestHandler from './components/RequestHandler';
-import InputForm from './components/InputForm';
+import WithdrawalHandler from './components/WithdrawalHandler';
 import styles from './page.module.css';
 
 const Page = () => {
   const [account, setAccount] = useState(null);
+  const [streamId, setStreamId] = useState('');
 
-  const handleAccountChange = (account) => {
-    setAccount(account);
+  const handleAccountChange = (newAccount) => {
+    setAccount(newAccount);
   };
 
-  const handleSubmit = (inputValue) => {
-    console.log('Submitted value:', inputValue);
-  };
+  useEffect(() => {
+    const savedAccount = localStorage.getItem('connectedWallet');
+    if (savedAccount) {
+      setAccount(JSON.parse(savedAccount));
+    }
+  }, []);
 
   return (
+    <>
     <div className={styles.container}>
-      <h1>My App</h1>
-      <div className={styles['button-group']}>
+      <div className={styles.header}>
         <WalletConnectButton onAccountChange={handleAccountChange} />
-        <RequestHandler account={account} />
+        {/* {account && (
+          <div className={styles['account-info']}>
+            <p>Connected Account: {account}</p>
+          </div>
+        )} */}
       </div>
-      {account && (
-        <div className={styles['account-info']}>
-          <p>Connected Account: {account}</p>
-        </div>
-      )}
-      <InputForm onSubmit={handleSubmit} />
+      <main className={styles.main}>
+        {/* <RequestHandler account={account} streamId={streamId} /> */}
+        <WithdrawalHandler account={account} setStreamId={setStreamId} />
+      </main>
     </div>
+    <div>
+      {account && (
+          <div className={styles['account-info']}>
+            <p>Connected Account: {account}</p>
+          </div>
+        )}
+    </div>
+    </>
   );
 };
 
