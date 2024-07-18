@@ -4,10 +4,11 @@ import styles from '../page.module.css';
 import { sablierLockupLinearABI } from '../abi/SablierLockupLinearABI';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import { RequestNetwork, Types, Utils } from '@requestnetwork/request-client.js';
+import { getBlockExplorerByName, getChainName } from './ChainLibrary';
 
-const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) => {
+const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData, setTxHash, setBlockExplorer, confirmedRequestData }) => {
   const [localStreamId, setLocalStreamId] = useState('');
-  const [withdrawnAmount, setWithdrawnAmount] = useState('');
+  const [withdrawalInProgress, setWithdrawalInProgress] = useState(false); // State to track withdrawal progress
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -18,10 +19,19 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) =>
   const withdraw = async () => {
     if (typeof window.ethereum !== 'undefined') {
       try {
+        // Set withdrawal in progress to true
+        setWithdrawalInProgress(true);
+
         const sablierContractAddress = "0x3E435560fd0a03ddF70694b35b673C25c65aBB6C";
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
         const underlyingSablierAddress = new ethers.Contract(sablierContractAddress, sablierLockupLinearABI, signer);
+
+        const currentChain = await provider.getNetwork();
+        const currentChainId = currentChain.chainId;
+        const chainName = getChainName(currentChainId);
+        const blockExplorer = getBlockExplorerByName(chainName);
+        setBlockExplorer(blockExplorer);
 
         let withdrawTx = await underlyingSablierAddress.withdrawMax(localStreamId, account);
         console.log(`Withdrawing from stream ID ${localStreamId} for account: ${account}`);
@@ -31,19 +41,31 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) =>
         const withdrawnAmountRaw = ethers.BigNumber.from(receipt.events[0].data);
         console.log(withdrawnAmountRaw);
         const withdrawnAmount = withdrawnAmountRaw.toString();
-        setWithdrawnAmount(withdrawnAmount); // Update withdrawnAmount state
+        setTxHash(receipt.transactionHash); // Pass txHash up to the parent
         console.log('Withdrawn Amount:', withdrawnAmountRaw.toString());
 
-        // Call RequestHandler function after logging withdrawnAmount
-        await handleRequestHandler(withdrawnAmount, localStreamId);
+        await handleRequestHandler(withdrawnAmount, localStreamId, receipt.transactionHash);
       } catch (error) {
         console.error('Request handling failed', error);
+      } finally {
+        // Set withdrawal in progress to false regardless of success or failure
+        setWithdrawalInProgress(false);
       }
     }
   };
 
-  const handleRequestHandler = async (withdrawnAmount, streamId) => {
+  const handleRequestHandler = async (withdrawnAmount, streamId, txHash, blockExplorer) => {
     console.log('Calling RequestHandler with withdrawnAmount:', withdrawnAmount);
+    console.log('Withdrawal transaction hash: ', txHash);
+    console.log('Test explorer', blockExplorer);
+
+    //Get date
+    const currentDate = new Date(Date.now());
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+    const day = String(currentDate.getDate()).padStart(2, '0');
+    const date = `${year}-${month}-${day}`;
+
     if (typeof window.ethereum !== 'undefined') {
       try {
         const web3Provider = new Web3SignatureProvider(window.ethereum);
@@ -66,7 +88,7 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) =>
           sender: streamIdDetails[0],
           recipient: streamIdDetails[1],
           tokenAddress: streamIdDetails[5]
-        }
+        };
         console.log(streamIdObject);
 
         const tempRequestClient = new RequestNetwork({
@@ -107,7 +129,7 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) =>
           },
           contentData: {
             reason: 'Withdrawal from StreamId ' + streamId,
-            dueDate: '2024.07.17',
+            dueDate: date,
           },
           signer: {
             type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
@@ -142,10 +164,13 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) =>
       <button
         onClick={withdraw}
         className={styles.button}
-        disabled={!account}
-        style={{ backgroundColor: !account ? 'grey' : '' }}
+        disabled={!account || !localStreamId || withdrawalInProgress} // Disable when withdrawing or no account/streamId
+        style={{
+          backgroundColor: !account || !localStreamId || withdrawalInProgress ? 'grey' : '', // Grey out when disabled
+          cursor: !account || !localStreamId || withdrawalInProgress ? 'not-allowed' : 'pointer', // Change cursor
+        }}
       >
-        Withdraw
+        {withdrawalInProgress ? 'Withdrawing...' : 'Withdraw'}
       </button>
     </div>
   );

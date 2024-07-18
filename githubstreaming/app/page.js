@@ -9,6 +9,8 @@ const HomePage = () => {
   const [account, setAccount] = useState('');
   const [streamId, setStreamId] = useState('');
   const [confirmedRequestData, setConfirmedRequestData] = useState(null);
+  const [txHash, setTxHash] = useState('');
+  const [blockExplorer, setBlockExplorer] = useState('');
 
   const connectWallet = async () => {
     if (typeof window.ethereum !== 'undefined') {
@@ -26,7 +28,7 @@ const HomePage = () => {
   const handleCreatePdf = async () => {
     console.log('Confirmed Request Data:', confirmedRequestData);
     if (confirmedRequestData) {
-      await createPdf(confirmedRequestData);
+      await createPdf(confirmedRequestData, txHash, blockExplorer);
     } else {
       console.error('No confirmed request data available to create PDF');
     }
@@ -44,8 +46,20 @@ const HomePage = () => {
             account={account}
             setStreamId={setStreamId}
             setConfirmedRequestData={setConfirmedRequestData}
+            setTxHash={setTxHash}
+            setBlockExplorer={setBlockExplorer}
+            confirmedRequestData={confirmedRequestData}
           />
-          <button onClick={handleCreatePdf} className={styles.button}>
+          <button 
+            onClick={handleCreatePdf} 
+            className={styles.button} 
+            disabled={!confirmedRequestData} 
+            blockExplorer={blockExplorer}
+            style={{
+              backgroundColor: !confirmedRequestData ? 'grey' : '',
+              cursor: !confirmedRequestData ? 'not-allowed' : 'pointer',
+            }}
+          >
             Create PDF
           </button>
           <div className={styles.accountInfo}>
