@@ -25,7 +25,7 @@ const RequestHandler = ({ account, streamId, withdrawnAmount }) => {
           sender: streamIdDetails[0],
           recipient: streamIdDetails[1],
           //streamIdDetails[2], = deposited amount
-          tokenAddress: streamIdDetails[3]
+          tokenAddress: streamIdDetails[5]
         }
 
         const tempRequestClient = new RequestNetwork({

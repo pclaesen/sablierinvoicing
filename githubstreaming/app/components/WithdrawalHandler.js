@@ -1,4 +1,3 @@
-// WithdrawHandler.js
 import React, { useState } from 'react';
 import { ethers, BigNumber } from 'ethers';
 import styles from '../page.module.css';
@@ -7,7 +6,7 @@ import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import { RequestNetwork, Types, Utils } from '@requestnetwork/request-client.js';
 
 const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) => {
-  const [streamId, setLocalStreamId] = useState('');
+  const [localStreamId, setLocalStreamId] = useState('');
   const [withdrawnAmount, setWithdrawnAmount] = useState('');
 
   const handleInputChange = (e) => {
@@ -24,10 +23,10 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) =>
         const signer = provider.getSigner();
         const underlyingSablierAddress = new ethers.Contract(sablierContractAddress, sablierLockupLinearABI, signer);
 
-        let withdrawTx = await underlyingSablierAddress.withdrawMax(streamId, account);
-        console.log(`Withdrawing from stream ID ${streamId} for account: ${account}`);
+        let withdrawTx = await underlyingSablierAddress.withdrawMax(localStreamId, account);
+        console.log(`Withdrawing from stream ID ${localStreamId} for account: ${account}`);
         const receipt = await withdrawTx.wait();
-        console.log(`Withdrawal of stream ID ${streamId} for account: ${account} completed`);
+        console.log(`Withdrawal of stream ID ${localStreamId} for account: ${account} completed`);
         console.log(receipt);
         const withdrawnAmountRaw = ethers.BigNumber.from(receipt.events[0].data);
         console.log(withdrawnAmountRaw);
@@ -36,7 +35,7 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) =>
         console.log('Withdrawn Amount:', withdrawnAmountRaw.toString());
 
         // Call RequestHandler function after logging withdrawnAmount
-        await handleRequestHandler(withdrawnAmount, streamId);
+        await handleRequestHandler(withdrawnAmount, localStreamId);
       } catch (error) {
         console.error('Request handling failed', error);
       }
@@ -44,7 +43,6 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) =>
   };
 
   const handleRequestHandler = async (withdrawnAmount, streamId) => {
-    // Implement RequestHandler logic here
     console.log('Calling RequestHandler with withdrawnAmount:', withdrawnAmount);
     if (typeof window.ethereum !== 'undefined') {
       try {
@@ -67,7 +65,6 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) =>
         const streamIdObject = {
           sender: streamIdDetails[0],
           recipient: streamIdDetails[1],
-          // streamIdDetails[2], = deposited amount
           tokenAddress: streamIdDetails[5]
         }
         console.log(streamIdObject);
@@ -88,7 +85,7 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) =>
               value: streamIdObject.tokenAddress,
               network: 'sepolia',
             },
-            expectedAmount: amountToPassInRequestString,
+            expectedAmount: withdrawnAmount,
             payee: {
               type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
               value: payeeIdentity,
@@ -109,7 +106,7 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) =>
             },
           },
           contentData: {
-            reason: 'Withdrawal from StreamId' + streamId,
+            reason: 'Withdrawal from StreamId ' + streamId,
             dueDate: '2024.07.17',
           },
           signer: {
@@ -137,7 +134,7 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData }) =>
     <div className={styles.withdrawal}>
       <input
         type="number"
-        value={streamId}
+        value={localStreamId}
         onChange={handleInputChange}
         className={styles.input}
         placeholder="Enter stream ID"
