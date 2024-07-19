@@ -1,29 +1,20 @@
-import { useEffect } from 'react';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, PDFName, PDFArray } from 'pdf-lib';
 import { ethers } from 'ethers';
 
 export async function createPdf(confirmedRequestData, txHash, blockExplorer, fileName = 'invoice.pdf') {
-  console.log('Creating PDF');
-  console.log(blockExplorer);
-
   try {
-    //Get date
     const currentDate = new Date(Date.now());
     const year = currentDate.getFullYear();
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
     const day = String(currentDate.getDate()).padStart(2, '0');
     const date = `${year}-${month}-${day}`;
 
-    // Create a new PDF document
     const pdfDoc = await PDFDocument.create();
     const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-
-    // Add a new page to the document
     const page = pdfDoc.addPage();
     const { width, height } = page.getSize();
     const fontSize = 12;
 
-    // Draw various pieces of information on the page
     page.drawText('Issue date: ' + date, {
       x: 450,
       y: height - 1 * fontSize,
@@ -88,39 +79,51 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
       color: rgb(0, 0, 0),
     });
 
-    page.drawText('Transaction hash: ' + blockExplorer + 'tx/' + txHash, {
+    const linkText = 'Transaction Hash: View Transaction';
+    const linkUrl = `${blockExplorer}tx/${txHash}`;
+    const linkWidth = timesRomanFont.widthOfTextAtSize(linkText, fontSize);
+    const linkHeight = fontSize;
+
+    page.drawText(linkText, {
       x: 50,
       y: height - 12 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       underline: true,
-      color: rgb(0, 0, 0),
+      color: rgb(0, 0, 1),
     });
 
-    
+    const linkAnnotation = pdfDoc.context.obj({
+      Type: PDFName.of('Annot'),
+      Subtype: PDFName.of('Link'),
+      Rect: [50, height - 12 * fontSize, 50 + linkWidth, height - 11 * fontSize],
+      Border: PDFArray.withContext(pdfDoc.context).push(0, 0, 0),
+      A: pdfDoc.context.obj({
+        S: PDFName.of('URI'),
+        URI: PDFName.of(linkUrl),
+      }),
+    });
 
-    // Save the PDF document to a blob
+    const annots = page.node.get(PDFName.of('Annots')) || pdfDoc.context.obj([]);
+    annots.push(linkAnnotation);
+    page.node.set(PDFName.of('Annots'), annots);
+
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-
-    // Create a URL for the blob
     const url = URL.createObjectURL(blob);
 
-    // Create an anchor element and trigger a download
     const link = document.createElement('a');
     link.href = url;
-    link.target = '_blank'; // Open in new tab
-    link.download = fileName; // Set the filename for download
+    link.target = '_blank';
+    link.download = fileName;
 
-    // Append the link to the body and programmatically click it
     document.body.appendChild(link);
     link.click();
 
-    // Clean up: remove the link from the DOM and revoke the URL after a delay
     setTimeout(() => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    }, 100); // Delay to ensure the link is fully processed before removal
+    }, 100);
     console.log('PDF created');
   } catch (error) {
     console.error('Error creating PDF:', error);
