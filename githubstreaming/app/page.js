@@ -1,9 +1,8 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import WithdrawalHandler from './components/WithdrawalHandler';
 import { createPdf } from './components/PDFHandler';
 import styles from './page.module.css';
-import { ethers } from 'ethers';
 
 const HomePage = () => {
   const [account, setAccount] = useState('');
@@ -29,6 +28,7 @@ const HomePage = () => {
     console.log('Confirmed Request Data:', confirmedRequestData);
     if (confirmedRequestData) {
       await createPdf(confirmedRequestData, txHash, blockExplorer);
+      setConfirmedRequestData(null); // Reset the confirmedRequestData to null after creating PDF
     } else {
       console.error('No confirmed request data available to create PDF');
     }
@@ -53,8 +53,7 @@ const HomePage = () => {
           <button 
             onClick={handleCreatePdf} 
             className={styles.button} 
-            disabled={!confirmedRequestData} 
-            blockExplorer={blockExplorer}
+            disabled={!confirmedRequestData}
             style={{
               backgroundColor: !confirmedRequestData ? 'grey' : '',
               cursor: !confirmedRequestData ? 'not-allowed' : 'pointer',
