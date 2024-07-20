@@ -37,12 +37,12 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData, setT
         console.log(`Withdrawing from stream ID ${localStreamId} for account: ${account}`);
         const receipt = await withdrawTx.wait();
         console.log(`Withdrawal of stream ID ${localStreamId} for account: ${account} completed`);
-        console.log(receipt);
+        //console.log(receipt);
         const withdrawnAmountRaw = ethers.BigNumber.from(receipt.events[0].data);
-        console.log(withdrawnAmountRaw);
+        //console.log(withdrawnAmountRaw);
         const withdrawnAmount = withdrawnAmountRaw.toString();
         setTxHash(receipt.transactionHash); // Pass txHash up to the parent
-        console.log('Withdrawn Amount:', withdrawnAmountRaw.toString());
+        //console.log('Withdrawn Amount:', withdrawnAmountRaw.toString());
 
         await handleRequestHandler(withdrawnAmount, localStreamId, receipt.transactionHash);
       } catch (error) {
@@ -55,9 +55,9 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData, setT
   };
 
   const handleRequestHandler = async (withdrawnAmount, streamId, txHash, blockExplorer) => {
-    console.log('Calling RequestHandler with withdrawnAmount:', withdrawnAmount);
-    console.log('Withdrawal transaction hash: ', txHash);
-    console.log('Test explorer', blockExplorer);
+    // console.log('Calling RequestHandler with withdrawnAmount:', withdrawnAmount);
+    // console.log('Withdrawal transaction hash: ', txHash);
+    // console.log('Test explorer', blockExplorer);
 
     //Get date
     const currentDate = new Date(Date.now());
@@ -69,7 +69,7 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData, setT
     if (typeof window.ethereum !== 'undefined') {
       try {
         const web3Provider = new Web3SignatureProvider(window.ethereum);
-        console.log(withdrawnAmount);
+        //console.log(withdrawnAmount);
 
         const sablierContractAddress = "0x3E435560fd0a03ddF70694b35b673C25c65aBB6C";
         const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -77,19 +77,19 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData, setT
         const underlyingSablierAddress = new ethers.Contract(sablierContractAddress, sablierLockupLinearABI, signer);
 
         let streamIdDetails = await underlyingSablierAddress.getStream(Number(streamId));
-        console.log("Stream ID details:", streamIdDetails);
+        //console.log("Stream ID details:", streamIdDetails);
 
         let amountToPassInRequestTemp = ethers.utils.parseUnits(withdrawnAmount, 6);
-        console.log("Temp amount", amountToPassInRequestTemp);
+        //console.log("Temp amount", amountToPassInRequestTemp);
         let amountToPassInRequestString = BigNumber.from(amountToPassInRequestTemp).toString();
-        console.log("String and BN:", amountToPassInRequestString);
+        //console.log("String and BN:", amountToPassInRequestString);
 
         const streamIdObject = {
           sender: streamIdDetails[0],
           recipient: streamIdDetails[1],
           tokenAddress: streamIdDetails[5]
         };
-        console.log(streamIdObject);
+        //console.log(streamIdObject);
 
         const tempRequestClient = new RequestNetwork({
           nodeConnectionConfig: {
@@ -140,7 +140,7 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData, setT
         const request = await tempRequestClient.createRequest(requestCreateParameters);
         const confirmedRequestData = await request.waitForConfirmation();
         console.log("Successfully created the request");
-        console.log(confirmedRequestData);
+        //console.log(confirmedRequestData);
 
         // Update the state in the parent component with confirmedRequestData
         setConfirmedRequestData(confirmedRequestData);

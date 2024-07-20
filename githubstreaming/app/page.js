@@ -25,7 +25,7 @@ const HomePage = () => {
   };
 
   const handleCreatePdf = async () => {
-    console.log('Confirmed Request Data:', confirmedRequestData);
+    //console.log('Confirmed Request Data:', confirmedRequestData);
     if (confirmedRequestData) {
       await createPdf(confirmedRequestData, txHash, blockExplorer);
       setConfirmedRequestData(null); // Reset the confirmedRequestData to null after creating PDF

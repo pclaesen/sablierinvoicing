@@ -16,7 +16,7 @@ exports.modules = {
   \***********************************************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-eval("module.exports = __webpack_require__(/*! ./contract-map.json */ \"(ssr)/./node_modules/@metamask/contract-metadata/contract-map.json\")\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHNzcikvLi9ub2RlX21vZHVsZXMvQG1ldGFtYXNrL2NvbnRyYWN0LW1ldGFkYXRhL2luZGV4LmpzIiwibWFwcGluZ3MiOiJBQUFBLHFJQUErQyIsInNvdXJjZXMiOlsid2VicGFjazovL2dpdGh1YnN0cmVhbWluZy8uL25vZGVfbW9kdWxlcy9AbWV0YW1hc2svY29udHJhY3QtbWV0YWRhdGEvaW5kZXguanM/NjUyYSJdLCJzb3VyY2VzQ29udGVudCI6WyJtb2R1bGUuZXhwb3J0cyA9IHJlcXVpcmUoJy4vY29udHJhY3QtbWFwLmpzb24nKVxuIl0sIm5hbWVzIjpbXSwic291cmNlUm9vdCI6IiJ9\n//# sourceURL=webpack-internal:///(ssr)/./node_modules/@metamask/contract-metadata/index.js\n");
+eval("module.exports = __webpack_require__(/*! ./contract-map.json */ \"(ssr)/./node_modules/@metamask/contract-metadata/contract-map.json\")\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHNzcikvLi9ub2RlX21vZHVsZXMvQG1ldGFtYXNrL2NvbnRyYWN0LW1ldGFkYXRhL2luZGV4LmpzIiwibWFwcGluZ3MiOiJBQUFBLHFJQUErQyIsInNvdXJjZXMiOlsid2VicGFjazovL2dpdGh1YnN0cmVhbWluZy8uL25vZGVfbW9kdWxlcy9AbWV0YW1hc2svY29udHJhY3QtbWV0YWRhdGEvaW5kZXguanM/NjkxYSJdLCJzb3VyY2VzQ29udGVudCI6WyJtb2R1bGUuZXhwb3J0cyA9IHJlcXVpcmUoJy4vY29udHJhY3QtbWFwLmpzb24nKVxuIl0sIm5hbWVzIjpbXSwic291cmNlUm9vdCI6IiJ9\n//# sourceURL=webpack-internal:///(ssr)/./node_modules/@metamask/contract-metadata/index.js\n");
 
 /***/ }),
 

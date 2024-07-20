@@ -55,7 +55,15 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
       color: rgb(0, 0, 0),
     });
 
-    page.drawText('Token address: ' + confirmedRequestData.currencyInfo.value, {
+    // page.drawText('Token address: ' + confirmedRequestData.currencyInfo.value, {
+    //   x: 50,
+    //   y: height - 8 * fontSize,
+    //   size: fontSize,
+    //   font: timesRomanFont,
+    //   color: rgb(0, 0, 0),
+    // });
+
+    page.drawText('Amount: ' + ethers.utils.formatUnits(confirmedRequestData.expectedAmount, 6) + ' USDC', {
       x: 50,
       y: height - 8 * fontSize,
       size: fontSize,
@@ -63,7 +71,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
       color: rgb(0, 0, 0),
     });
 
-    page.drawText('Amount: ' + ethers.utils.formatUnits(confirmedRequestData.expectedAmount, 6) + ' USDC', {
+    page.drawText('Note: ' + confirmedRequestData.contentData.reason, {
       x: 50,
       y: height - 9 * fontSize,
       size: fontSize,
@@ -71,18 +79,10 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
       color: rgb(0, 0, 0),
     });
 
-    page.drawText('Note: ' + confirmedRequestData.contentData.reason, {
-      x: 50,
-      y: height - 10 * fontSize,
-      size: fontSize,
-      font: timesRomanFont,
-      color: rgb(0, 0, 0),
-    });
-
-    const linkText = 'Transaction Hash: View Transaction';
+    const linkText = 'View transaction on block explorer';
     const linkUrl = `${blockExplorer}tx/${txHash}`;
     const linkWidth = timesRomanFont.widthOfTextAtSize(linkText, fontSize);
-    const linkHeight = fontSize;
+    //const linkHeight = fontSize;
 
     page.drawText(linkText, {
       x: 50,
