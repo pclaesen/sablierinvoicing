@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { ethers, BigNumber } from 'ethers';
-import styles from '../page.module.css';
+import { ethers } from 'ethers';
+import styles from '../../styles/page.module.css';
 import { sablierLockupLinearABI } from '../abi/SablierLockupLinearABI';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import { RequestNetwork, Types, Utils } from '@requestnetwork/request-client.js';
+
 import { getBlockExplorerByName, getChainName } from './ChainLibrary';
+import { createPdf } from './PDFHandler';
 
 const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData, setTxHash, setBlockExplorer, confirmedRequestData }) => {
   const [localStreamId, setLocalStreamId] = useState('');
@@ -54,103 +56,94 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData, setT
     }
   };
 
-  const handleRequestHandler = async (withdrawnAmount, streamId, txHash, blockExplorer) => {
-    // console.log('Calling RequestHandler with withdrawnAmount:', withdrawnAmount);
-    // console.log('Withdrawal transaction hash: ', txHash);
-    // console.log('Test explorer', blockExplorer);
 
-    //Get date
-    const currentDate = new Date(Date.now());
-    const year = currentDate.getFullYear();
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
-    const day = String(currentDate.getDate()).padStart(2, '0');
-    const date = `${year}-${month}-${day}`;
+const handleRequestHandler = async (withdrawnAmount, streamId, txHash, blockExplorer) => {
+  const currentDate = new Date(Date.now());
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+  const day = String(currentDate.getDate()).padStart(2, '0');
+  const date = `${year}-${month}-${day}`;
 
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        const web3Provider = new Web3SignatureProvider(window.ethereum);
-        //console.log(withdrawnAmount);
+  if (typeof window.ethereum !== 'undefined') {
+    try {
+      const web3Provider = new Web3SignatureProvider(window.ethereum);
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
 
-        const sablierContractAddress = "0x3E435560fd0a03ddF70694b35b673C25c65aBB6C";
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const underlyingSablierAddress = new ethers.Contract(sablierContractAddress, sablierLockupLinearABI, signer);
+      const sablierContractAddress = "0x3E435560fd0a03ddF70694b35b673C25c65aBB6C";
+      const underlyingSablierAddress = new ethers.Contract(sablierContractAddress, sablierLockupLinearABI, provider);
 
-        let streamIdDetails = await underlyingSablierAddress.getStream(Number(streamId));
-        //console.log("Stream ID details:", streamIdDetails);
+      let streamIdDetails = await underlyingSablierAddress.getStream(Number(streamId));
 
-        let amountToPassInRequestTemp = ethers.utils.parseUnits(withdrawnAmount, 6);
-        //console.log("Temp amount", amountToPassInRequestTemp);
-        let amountToPassInRequestString = BigNumber.from(amountToPassInRequestTemp).toString();
-        //console.log("String and BN:", amountToPassInRequestString);
+      const streamIdObject = {
+        sender: streamIdDetails[0],
+        recipient: streamIdDetails[1],
+        tokenAddress: streamIdDetails[5]
+      };
 
-        const streamIdObject = {
-          sender: streamIdDetails[0],
-          recipient: streamIdDetails[1],
-          tokenAddress: streamIdDetails[5]
-        };
-        //console.log(streamIdObject);
+      const requestClient = new RequestNetwork({
+        nodeConnectionConfig: {
+          baseURL: 'https://sepolia.gateway.request.network/',
+        },
+        signatureProvider: web3Provider,
+      });
 
-        const tempRequestClient = new RequestNetwork({
-          nodeConnectionConfig: {
-            baseURL: 'https://sepolia.gateway.request.network/',
+      const payeeIdentity = streamIdObject.recipient;
+      const payerIdentity = streamIdObject.sender;
+      const requestCreateParameters = {
+        requestInfo: {
+          currency: {
+            type: Types.RequestLogic.CURRENCY.ERC20,
+            value: streamIdObject.tokenAddress,
+            network: 'sepolia',
           },
-          signatureProvider: web3Provider,
-        });
-
-        const payeeIdentity = streamIdObject.recipient;
-        const payerIdentity = streamIdObject.sender;
-        const requestCreateParameters = {
-          requestInfo: {
-            currency: {
-              type: Types.RequestLogic.CURRENCY.ERC20,
-              value: streamIdObject.tokenAddress,
-              network: 'sepolia',
-            },
-            expectedAmount: withdrawnAmount,
-            payee: {
-              type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-              value: payeeIdentity,
-            },
-            payer: {
-              type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-              value: payerIdentity,
-            },
-            timestamp: Utils.getCurrentTimestampInSecond(),
-          },
-          paymentNetwork: {
-            id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
-            parameters: {
-              paymentNetworkName: 'sepolia',
-              paymentAddress: payeeIdentity,
-              feeAddress: '0x0000000000000000000000000000000000000000',
-              feeAmount: '0',
-            },
-          },
-          contentData: {
-            reason: 'Withdrawal from StreamId ' + streamId,
-            dueDate: date,
-          },
-          signer: {
+          expectedAmount: withdrawnAmount,
+          payee: {
             type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
             value: payeeIdentity,
           },
-        };
+          payer: {
+            type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+            value: payerIdentity,
+          },
+          timestamp: Utils.getCurrentTimestampInSecond(),
+        },
+        paymentNetwork: {
+          id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
+          parameters: {
+            paymentNetworkName: 'sepolia',
+            paymentAddress: payeeIdentity,
+            feeAddress: '0x0000000000000000000000000000000000000000',
+            feeAmount: '0',
+          },
+        },
+        contentData: {
+          streamID: streamId,
+          dueDate: date,
+          txHashWithdrawFromStream: txHash,
+          PDF_Created: true
+        },
+        topics: ["sablierWithdrawal"],
+        signer: {
+          type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+          value: payeeIdentity,
+        },
+      };
 
-        const request = await tempRequestClient.createRequest(requestCreateParameters);
-        const confirmedRequestData = await request.waitForConfirmation();
-        console.log("Successfully created the request");
-        //console.log(confirmedRequestData);
+      const request = await requestClient.createRequest(requestCreateParameters);
+      const confirmedRequestData = await request.waitForConfirmation(5);
+      console.log("Successfully created the request");
+      console.log(confirmedRequestData);
 
-        // Update the state in the parent component with confirmedRequestData
-        setConfirmedRequestData(confirmedRequestData);
-      } catch (error) {
-        console.error('Request handling failed', error);
-      }
-    } else {
-      console.error('No MetaMask connection found, redirecting to connection process...');
+      setConfirmedRequestData(confirmedRequestData);
+      createPdf(confirmedRequestData);
+    } catch (error) {
+      console.error('Request handling failed', error);
     }
-  };
+  } else {
+    console.error('No MetaMask connection found, redirecting to connection process...');
+  }
+};
 
   return (
     <div className={styles.withdrawal}>

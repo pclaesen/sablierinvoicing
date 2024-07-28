@@ -71,15 +71,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
       color: rgb(0, 0, 0),
     });
 
-    page.drawText('Note: ' + confirmedRequestData.contentData.reason, {
-      x: 50,
-      y: height - 9 * fontSize,
-      size: fontSize,
-      font: timesRomanFont,
-      color: rgb(0, 0, 0),
-    });
-
-    const linkText = 'View transaction on block explorer';
+    const linkText = 'View transaction';
     const linkUrl = `${blockExplorer}tx/${txHash}`;
     const linkWidth = timesRomanFont.widthOfTextAtSize(linkText, fontSize);
     //const linkHeight = fontSize;
