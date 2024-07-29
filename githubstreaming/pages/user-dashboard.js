@@ -1,3 +1,5 @@
+// user-dashboard.js
+
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import styles from '../styles/page.module.css';
@@ -24,35 +26,17 @@ const UserDashboard = ({ account }) => {
     if (!account) {
       router.push('/');
     } else {
-      getUserRequests();
       fetchEnvioData();
     }
   }, [account]);
 
   useEffect(() => {
     if (invoiceData) {
-      const { streamId, withdrawnAmount, sablierContractAddress } = invoiceData;
-      handleRequest(streamId, withdrawnAmount, sablierContractAddress); // Call function to handle request
+      const { streamId, withdrawnAmount, sablierContractAddress, transactionHash } = invoiceData;
+      handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash); // Call function to handle request
       setInvoiceData(null); // Reset invoiceData after request is handled
     }
   }, [invoiceData]);
-
-  async function getUserRequests() {
-    setLoading(true);
-    try {
-      const identityAddress = account;
-      const requests = await requestClient.fromIdentity({
-        type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-        value: identityAddress,
-      });
-      const requestDatas = await Promise.all(requests.map((request) => request.getData()));
-      setRequests(requestDatas);
-    } catch (error) {
-      console.error('Error fetching user requests:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function fetchEnvioData() {
     setLoading(true);
@@ -84,8 +68,8 @@ const UserDashboard = ({ account }) => {
     (request.payee.value.toLowerCase() === account.toLowerCase() || request.payer.value.toLowerCase() === account.toLowerCase())
   );
 
-  const handleCreateInvoice = (streamId, withdrawnAmount, sablierContractAddress) => {
-    setInvoiceData({ streamId, withdrawnAmount, sablierContractAddress });
+  const handleCreateInvoice = (streamId, withdrawnAmount, sablierContractAddress, transactionHash) => {
+    setInvoiceData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash });
   };
 
   return (
@@ -110,9 +94,10 @@ const UserDashboard = ({ account }) => {
                     <p>Date and time: {new Date(data.timestamp * 1000).toLocaleString()}</p>
                     <p>Amount: {Number((data.data) / 10e5)} {tokenDetails[`0x${data.topic3.slice(26)}`]?.symbol || "Loading..."}</p>
                     <p>Stream ID: {Number(data.topic1)}</p>
+                    <p>Withdrawal transaction hash: {data.transaction_hash}</p>
                     <p>Sablier contract address: {data.address}</p>
                     <button 
-                      onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address)}
+                      onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash)}
                       className={styles.button}
                     >
                       Create Invoice

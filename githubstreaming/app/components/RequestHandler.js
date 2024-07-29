@@ -1,9 +1,13 @@
+// RequestHandler.js
+
 import { ethers } from 'ethers';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import { RequestNetwork, Types, Utils } from '@requestnetwork/request-client.js';
 import { sablierLockupLinearABI } from '../abi/SablierLockupLinearABI';
+import { createPdf } from './PDFHandler'; // Ensure this path is correct
+import { getChainName, getBlockExplorerByName } from './ChainLibrary'; // Ensure this path is correct
 
-export const handleRequest = async (streamId, withdrawnAmount, sablierContractAddress) => {
+export const handleRequest = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash) => {
   if (typeof window.ethereum !== 'undefined') {
     try {
       const web3Provider = new Web3SignatureProvider(window.ethereum);
@@ -11,10 +15,15 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
       const signer = provider.getSigner();
       const underlyingSablierAddress = new ethers.Contract(sablierContractAddress, sablierLockupLinearABI, signer);
 
-      let streamIdDetails = await underlyingSablierAddress.getStream(Number(streamId));
+      const network = await provider.getNetwork();
+      const chainId = network.chainId;
+      const chainName = getChainName(chainId);
+      const blockExplorer = getBlockExplorerByName(chainName);
+
+      const streamIdDetails = await underlyingSablierAddress.getStream(Number(streamId));
       console.log("Stream ID details:", streamIdDetails);
 
-      let amountToPassInRequest = withdrawnAmount;
+      const amountToPassInRequest = withdrawnAmount;
 
       const streamIdObject = {
         sender: streamIdDetails[0],
@@ -31,6 +40,11 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
 
       const payeeIdentity = streamIdObject.recipient;
       const payerIdentity = streamIdObject.sender;
+
+      // Get the current date and format it according to the user's locale
+      const currentDate = new Date();
+      const formattedDate = currentDate.toLocaleDateString(); // You can customize the options here if needed
+
       const requestCreateParameters = {
         requestInfo: {
           currency: {
@@ -60,7 +74,8 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
         },
         contentData: {
           reason: 'Withdrawal from StreamId ' + streamId,
-          dueDate: '2024.07.17',
+          dueDate: formattedDate,
+          txHashWithdrawFromStream: transactionHash,
         },
         signer: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
@@ -71,6 +86,10 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
       const request = await tempRequestClient.createRequest(requestCreateParameters);
       const confirmedRequestData = await request.waitForConfirmation();
       console.log(confirmedRequestData);
+
+      // Create PDF after request confirmation
+      await createPdf(confirmedRequestData, transactionHash, blockExplorer);
+
     } catch (error) {
       console.error('Request handling failed', error);
     }

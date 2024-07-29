@@ -1,13 +1,10 @@
-import { PDFDocument, StandardFonts, rgb, PDFName, PDFArray } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, PDFName, PDFArray, parseDate } from 'pdf-lib';
 import { ethers } from 'ethers';
 
 export async function createPdf(confirmedRequestData, txHash, blockExplorer, fileName = 'invoice.pdf') {
   try {
-    const currentDate = new Date(Date.now());
-    const year = currentDate.getFullYear();
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const day = String(currentDate.getDate()).padStart(2, '0');
-    const date = `${year}-${month}-${day}`;
+    const currentDate = new Date();
+    const formattedDate = currentDate.toLocaleDateString()
 
     const pdfDoc = await PDFDocument.create();
     const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
@@ -15,7 +12,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
     const { width, height } = page.getSize();
     const fontSize = 12;
 
-    page.drawText('Issue date: ' + date, {
+    page.drawText('Issue date: ' + formattedDate, {
       x: 450,
       y: height - 1 * fontSize,
       size: fontSize,
@@ -23,7 +20,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
       color: rgb(0, 0, 0),
     });
 
-    page.drawText('Paid on: ' + confirmedRequestData.contentData.dueDate, {
+    page.drawText('Paid on: ' + formattedDate, {
       x: 450,
       y: height - 2 * fontSize,
       size: fontSize,
@@ -55,15 +52,8 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
       color: rgb(0, 0, 0),
     });
 
-    // page.drawText('Token address: ' + confirmedRequestData.currencyInfo.value, {
-    //   x: 50,
-    //   y: height - 8 * fontSize,
-    //   size: fontSize,
-    //   font: timesRomanFont,
-    //   color: rgb(0, 0, 0),
-    // });
-
-    page.drawText('Amount: ' + ethers.utils.formatUnits(confirmedRequestData.expectedAmount, 6) + ' USDC', {
+    let amountWei = confirmedRequestData.expectedAmount / 10e6;
+    page.drawText('Amount: ' + ethers.utils.formatUnits(amountWei, 6) + ' USDC', {
       x: 50,
       y: height - 8 * fontSize,
       size: fontSize,
@@ -74,7 +64,6 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
     const linkText = 'View transaction';
     const linkUrl = `${blockExplorer}tx/${txHash}`;
     const linkWidth = timesRomanFont.widthOfTextAtSize(linkText, fontSize);
-    //const linkHeight = fontSize;
 
     page.drawText(linkText, {
       x: 50,

@@ -2,14 +2,14 @@ import axios from "axios";
 import { ethers } from "ethers";
 
 export const getEnvioData = async (account) => {
-  let accountToPass;
+  let account32Bytes;
   if (ethers.utils.isAddress(account)) {
     // Remove the '0x' prefix
     const addressWithoutPrefix = account.slice(2);
 
     // Pad the address to 32 bytes (64 hex characters) with leading zeros
-    accountToPass = '0x' + addressWithoutPrefix.padStart(64, '0');
-    console.log("32-byte hex value of the address:", accountToPass);
+    account32Bytes = '0x' + addressWithoutPrefix.padStart(64, '0');
+    console.log("32-byte hex value of the address:", account32Bytes);
   } else {
     console.log("Invalid address");
     return;
@@ -19,16 +19,16 @@ export const getEnvioData = async (account) => {
     from_block: 5779939,
     logs: [
       {
-        // address: [
-        //  // "0x3E435560fd0a03ddF70694b35b673C25c65aBB6C" //contract address LockupLinear
-        // ],
+        address: [
+         "0x3E435560fd0a03ddF70694b35b673C25c65aBB6C" //contract address LockupLinear
+        ],
         topics: [
           [
             "0x40b88e5c41c5a97ffb7b6ef88a0a2d505aa0c634cf8a0275cb236ea7dd87ed4d"
           ],
           [],
           [
-            accountToPass
+            account32Bytes
           ]
         ]
       }
@@ -43,6 +43,7 @@ export const getEnvioData = async (account) => {
         "block_number",
         "log_index",
         "transaction_index",
+        "transaction_hash",
         "data",
         "address",
         "topic0",
@@ -65,6 +66,7 @@ export const getEnvioData = async (account) => {
         'Content-Type': 'application/json'
       }
     });
+    //console.log(withdrawalsForAccount);
 
     const combinedData = [];
 
