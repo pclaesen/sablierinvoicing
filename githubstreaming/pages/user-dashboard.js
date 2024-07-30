@@ -1,5 +1,3 @@
-// user-dashboard.js
-
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import styles from '../styles/page.module.css';
@@ -14,6 +12,9 @@ const UserDashboard = ({ account }) => {
   const [loading, setLoading] = useState(false);
   const [tokenDetails, setTokenDetails] = useState({});
   const [invoiceData, setInvoiceData] = useState(null);
+  const [inputValues, setInputValues] = useState({});
+  const [buttonState, setButtonState] = useState({});
+
   const router = useRouter();
 
   const requestClient = new RequestNetwork({
@@ -32,8 +33,22 @@ const UserDashboard = ({ account }) => {
 
   useEffect(() => {
     if (invoiceData) {
-      const { streamId, withdrawnAmount, sablierContractAddress, transactionHash } = invoiceData;
-      handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash); // Call function to handle request
+      const { streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key } = invoiceData;
+      handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber)
+        .then((result) => {
+          if (result.success) {
+            setButtonState(prevState => ({ ...prevState, [key]: 'success' }));
+            setTimeout(() => {
+              setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+              setInputValues(prevValues => ({ ...prevValues, [key]: '' }));
+            }, 5000);
+          } else {
+            setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+          }
+        })
+        .catch(() => {
+          setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+        });
       setInvoiceData(null); // Reset invoiceData after request is handled
     }
   }, [invoiceData]);
@@ -63,14 +78,19 @@ const UserDashboard = ({ account }) => {
     }
   }
 
+  const handleCreateInvoice = (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key) => {
+    setInvoiceData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key });
+    setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
+  };
+
+  const handleInputChange = (key, event) => {
+    setInputValues(prevValues => ({ ...prevValues, [key]: event.target.value }));
+  };
+
   const filteredRequests = requests.filter(request => 
     (request.contentData.streamID) && 
     (request.payee.value.toLowerCase() === account.toLowerCase() || request.payer.value.toLowerCase() === account.toLowerCase())
   );
-
-  const handleCreateInvoice = (streamId, withdrawnAmount, sablierContractAddress, transactionHash) => {
-    setInvoiceData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash });
-  };
 
   return (
     <div className={styles.container}>
@@ -88,22 +108,33 @@ const UserDashboard = ({ account }) => {
               {loading ? (
                 <p className={styles.loading}>Loading envio data...</p>
               ) : envioData.length > 0 ? (
-                envioData.map((data, index) => (
-                  <div key={index} className={styles.requestItem}>
-                    <p>Block Number: {data.number}</p>
-                    <p>Date and time: {new Date(data.timestamp * 1000).toLocaleString()}</p>
-                    <p>Amount: {Number((data.data) / 10e5)} {tokenDetails[`0x${data.topic3.slice(26)}`]?.symbol || "Loading..."}</p>
-                    <p>Stream ID: {Number(data.topic1)}</p>
-                    <p>Withdrawal transaction hash: {data.transaction_hash}</p>
-                    <p>Sablier contract address: {data.address}</p>
-                    <button 
-                      onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash)}
-                      className={styles.button}
-                    >
-                      Create Invoice
-                    </button>
-                  </div>
-                ))
+                envioData.map((data) => {
+                  const key = data.transaction_hash; // Use transaction hash as unique key
+                  return (
+                    <div key={key} className={styles.requestItem}>
+                      <p>Block Number: {data.number}</p>
+                      <p>Date and time: {new Date(data.timestamp * 1000).toLocaleString()}</p>
+                      <p>Amount: {Number((data.data) / 10e5)} {tokenDetails[`0x${data.topic3.slice(26)}`]?.symbol || "Loading..."}</p>
+                      <p>Stream ID: {Number(data.topic1)}</p>
+                      <p>Withdrawal transaction hash: {data.transaction_hash}</p>
+                      <p>Sablier contract address: {data.address}</p>
+                      <input 
+                        type="text" 
+                        value={inputValues[key] || ''} 
+                        onChange={(event) => handleInputChange(key, event)}
+                        placeholder="Input invoice number"
+                        className={styles.input}
+                      />
+                      <button 
+                        onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash, inputValues[key] || '', key)}
+                        className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                        disabled={!inputValues[key] || buttonState[key] === 'loading'}
+                      >
+                        {buttonState[key] === 'loading' ? 'Creating invoice...' : buttonState[key] === 'success' ? 'Invoice Created' : 'Create Invoice'}
+                      </button>
+                    </div>
+                  );
+                })
               ) : (
                 <p>No previous withdrawals found.</p>
               )}

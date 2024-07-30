@@ -9,7 +9,7 @@ export const getEnvioData = async (account) => {
 
     // Pad the address to 32 bytes (64 hex characters) with leading zeros
     account32Bytes = '0x' + addressWithoutPrefix.padStart(64, '0');
-    console.log("32-byte hex value of the address:", account32Bytes);
+    //console.log("32-byte hex value of the address:", account32Bytes);
   } else {
     console.log("Invalid address");
     return;
@@ -88,7 +88,7 @@ export const getEnvioData = async (account) => {
       });
     });
 
-    console.log(combinedData);
+    //console.log(combinedData);
     return combinedData;
   } catch (error) {
     console.error('Error fetching withdrawals for account:', error);

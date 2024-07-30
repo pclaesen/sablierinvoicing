@@ -7,7 +7,7 @@ import { sablierLockupLinearABI } from '../abi/SablierLockupLinearABI';
 import { createPdf } from './PDFHandler'; // Ensure this path is correct
 import { getChainName, getBlockExplorerByName } from './ChainLibrary'; // Ensure this path is correct
 
-export const handleRequest = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash) => {
+export const handleRequest = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber) => {
   if (typeof window.ethereum !== 'undefined') {
     try {
       const web3Provider = new Web3SignatureProvider(window.ethereum);
@@ -76,6 +76,7 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
           reason: 'Withdrawal from StreamId ' + streamId,
           dueDate: formattedDate,
           txHashWithdrawFromStream: transactionHash,
+          userInvoiceNumber: invoiceNumber,
         },
         signer: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
@@ -88,12 +89,14 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
       console.log(confirmedRequestData);
 
       // Create PDF after request confirmation
-      await createPdf(confirmedRequestData, transactionHash, blockExplorer);
-
+      await createPdf(confirmedRequestData, transactionHash, blockExplorer, invoiceNumber);
+      return { success: true };
     } catch (error) {
       console.error('Request handling failed', error);
+      return { success: false, error: error.message };
     }
   } else {
     console.error('No MetaMask connection found, redirecting to connection process...');
+    return { success: false, error: 'No MetaMask connection found' };
   }
 };

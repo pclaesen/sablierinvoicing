@@ -64,15 +64,25 @@
 }
 
 .input {
-  background-color: #8b8a8a;
-  color: white;
+  background-color: white;
+  color: black;
   padding: 10px 20px;
   margin: 10px;
-  border: 1px;
-  border-color: white;
+  border: solid 1px;
+  border-color: black;
   border-radius: 5px;
 }
 
 .input::placeholder {
+  color: black;
+}
+
+.buttonLoading {
+  background-color: #ccc; /* Gray color */
+  cursor: not-allowed;
+}
+
+.buttonSuccess {
+  background-color: #4CAF50; /* Green color */
   color: white;
 }

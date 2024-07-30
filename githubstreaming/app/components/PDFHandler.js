@@ -1,7 +1,7 @@
 import { PDFDocument, StandardFonts, rgb, PDFName, PDFArray, parseDate } from 'pdf-lib';
 import { ethers } from 'ethers';
 
-export async function createPdf(confirmedRequestData, txHash, blockExplorer, fileName = 'invoice.pdf') {
+export async function createPdf(confirmedRequestData, txHash, blockExplorer, invoiceNumber, fileName = 'invoice.pdf') {
   try {
     const currentDate = new Date();
     const formattedDate = currentDate.toLocaleDateString()
@@ -12,15 +12,15 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
     const { width, height } = page.getSize();
     const fontSize = 12;
 
-    page.drawText('Issue date: ' + formattedDate, {
-      x: 450,
-      y: height - 1 * fontSize,
-      size: fontSize,
+    page.drawText('Invoice: ' + invoiceNumber, {
+      x: 50,
+      y: height - 2 * fontSize,
+      size: fontSize + 2,
       font: timesRomanFont,
       color: rgb(0, 0, 0),
     });
-
-    page.drawText('Paid on: ' + formattedDate, {
+    
+    page.drawText('Issue date: ' + formattedDate, {
       x: 450,
       y: height - 2 * fontSize,
       size: fontSize,
@@ -28,9 +28,17 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
       color: rgb(0, 0, 0),
     });
 
+    page.drawText('Paid on: ' + formattedDate, {
+      x: 450,
+      y: height - 3 * fontSize,
+      size: fontSize,
+      font: timesRomanFont,
+      color: rgb(0, 0, 0),
+    });
+
     page.drawText('Request ID: ' + confirmedRequestData.requestId, {
       x: 50,
-      y: height - 4 * fontSize,
+      y: height - 5 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       color: rgb(0, 0.53, 0.71),
@@ -38,7 +46,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
 
     page.drawText('Customer: ' + confirmedRequestData.payer.value, {
       x: 50,
-      y: height - 6 * fontSize,
+      y: height - 7 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       color: rgb(0, 0, 0),
@@ -46,7 +54,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
 
     page.drawText('Payee: ' + confirmedRequestData.payee.value, {
       x: 50,
-      y: height - 7 * fontSize,
+      y: height - 8 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       color: rgb(0, 0, 0),
@@ -55,7 +63,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
     let amountWei = confirmedRequestData.expectedAmount / 10e6;
     page.drawText('Amount: ' + ethers.utils.formatUnits(amountWei, 6) + ' USDC', {
       x: 50,
-      y: height - 8 * fontSize,
+      y: height - 9 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       color: rgb(0, 0, 0),
@@ -67,7 +75,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
 
     page.drawText(linkText, {
       x: 50,
-      y: height - 12 * fontSize,
+      y: height - 13 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       underline: true,
