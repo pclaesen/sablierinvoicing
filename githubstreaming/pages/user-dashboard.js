@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import Header from '../app/components/Header';
 import styles from '../styles/page.module.css';
 import { RequestNetwork, Types } from "@requestnetwork/request-client.js";
 import { getEnvioData } from '../app/components/EnvioData';
@@ -94,9 +95,7 @@ const UserDashboard = ({ account }) => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <h1>Dashboard</h1>
-      </div>
+      <Header />
       <div className={styles.main}>
         {account ? (
           <>
@@ -122,7 +121,7 @@ const UserDashboard = ({ account }) => {
                         type="text" 
                         value={inputValues[key] || ''} 
                         onChange={(event) => handleInputChange(key, event)}
-                        placeholder="Input invoice number"
+                        placeholder="Enter invoice number"
                         className={styles.input}
                       />
                       <button 
@@ -139,7 +138,7 @@ const UserDashboard = ({ account }) => {
                 <p>No previous withdrawals found.</p>
               )}
             </div>
-            <div className={styles.requests}>
+            {/* <div className={styles.requests}>
               <h2>Your invoices</h2>
               {loading ? (
                 <p className={styles.loading}>Loading requests...</p>
@@ -157,7 +156,7 @@ const UserDashboard = ({ account }) => {
               ) : (
                 <p>No requests found.</p>
               )}
-            </div>
+            </div> */}
           </>
         ) : (
           <p>Please connect your account to view your requests.</p>

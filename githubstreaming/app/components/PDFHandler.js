@@ -12,10 +12,10 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, inv
     const { width, height } = page.getSize();
     const fontSize = 12;
 
-    page.drawText('Invoice: ' + invoiceNumber, {
+    page.drawText('Invoice number: ' + invoiceNumber, {
       x: 50,
       y: height - 2 * fontSize,
-      size: fontSize + 2,
+      size: fontSize,
       font: timesRomanFont,
       color: rgb(0, 0, 0),
     });

@@ -1,0 +1,30 @@
+/* styles/header.module.css */
+
+.header {
+    width: 100%;
+    background-color: #333;
+    padding: 10px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed; /* Fixed position to stick to the top */
+    top: 0;
+    left: 0;
+    z-index: 1000; /* Ensure it stays above other content */
+  }
+  
+  .nav {
+    display: flex;
+    gap: 20px; /* Space between menu items */
+  }
+  
+  .link {
+    color: #fff;
+    text-decoration: none;
+    font-size: 18px;
+  }
+  
+  .link:hover {
+    text-decoration: underline;
+  }
+  

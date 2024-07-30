@@ -10,6 +10,7 @@
   background-color: #ffffff;
   padding: 0px;
   box-sizing: border-box;
+  padding-top: 60px; /* Ensure content is not hidden behind fixed header */
 }
 
 .header {
@@ -19,12 +20,17 @@
   text-align: center;
   border-bottom: 1px solid #ddd;
   color: black;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000; /* Ensure the header stays on top of other content */
 }
 
 .main {
   flex: 1;
   width: 100%;
   padding: 20px;
+  /* Add top padding to ensure the main content is below the fixed header */
 }
 
 .button {

@@ -1,5 +1,6 @@
 "use client"
 import React, { useState } from 'react';
+import Header from '../app/components/Header';
 import WithdrawalHandler from '../app/components/WithdrawalHandler';
 import { createPdf } from '../app/components/PDFHandler';
 import { getEnvioData } from '@/app/components/EnvioData';
@@ -47,6 +48,7 @@ const HomePage = ({ account, setAccount }) => {
         </button>
       ) : (
         <>
+          <Header />
           <WithdrawalHandler
             account={account}
             setStreamId={setStreamId}
@@ -55,7 +57,7 @@ const HomePage = ({ account, setAccount }) => {
             setBlockExplorer={setBlockExplorer}
             confirmedRequestData={confirmedRequestData}
           />
-          <button 
+          {/* <button 
             onClick={handleCreatePdf} 
             className={styles.button} 
             disabled={!confirmedRequestData}
@@ -65,16 +67,16 @@ const HomePage = ({ account, setAccount }) => {
             }}
           >
             Create PDF
-          </button>
+          </button> */}
           <div className={styles.accountInfo}>
             Connected Account: {account}
           </div>
-          <button onClick={goToDashboard} className={styles.button}>
+          {/* <button onClick={goToDashboard} className={styles.button}>
             Go to Dashboard
           </button>
           <button onClick={() => getEnvioData(account)} className={styles.button}>
             Envio
-          </button>
+          </button> */}
         </>
       )}
     </div>
