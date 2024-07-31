@@ -17,13 +17,10 @@ contract StreamCreatorTest is Test {
 
     address internal alice = address(0x1000);
     address internal bob = address(0x2000);
-    address internal charlie = address(0x3000); 
+    address internal charlie = address(0x3000);
+    address[] internal recipientsArray;    
 
-    address[] internal recipientsArray;
-    
-
-    function setUp() public {
-        
+    function setUp() public {        
         // Load the Sablier contract from Ethereum Mainnet
         sablier = ISablierV2LockupLinear(SABLIER_ADDRESS);
 
@@ -59,28 +56,28 @@ contract StreamCreatorTest is Test {
         sablier.withdrawMax(10, bob);
         vm.stopPrank();
 
-        console2.log("Amount withdrawn",sablier.getWithdrawnAmount(10));
+        console2.log("Amount withdrawn", sablier.getWithdrawnAmount(10));
 
         vm.warp(block.timestamp + 10 days);
         vm.startPrank(bob);
         sablier.withdrawMax(10, bob);
         vm.stopPrank();
 
-        console2.log("Amount withdrawn",sablier.getWithdrawnAmount(10));
+        console2.log("Amount withdrawn", sablier.getWithdrawnAmount(10));
 
         vm.warp(block.timestamp + 20 days);
         vm.startPrank(bob);
         sablier.withdrawMax(10, bob);
         vm.stopPrank();
 
-        console2.log("Amount withdrawn",sablier.getWithdrawnAmount(10));
+        console2.log("Amount withdrawn", sablier.getWithdrawnAmount(10));
 
         vm.warp(block.timestamp + 30 days);
         vm.startPrank(bob);
         sablier.withdrawMax(10, bob);
         vm.stopPrank();
 
-        console2.log("Amount withdrawn",sablier.getWithdrawnAmount(10));
+        console2.log("Amount withdrawn", sablier.getWithdrawnAmount(10));
         
     }
 }

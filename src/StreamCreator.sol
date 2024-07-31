@@ -19,8 +19,8 @@ contract BatchLLStreamCreator {
 
     /// @dev For this function to work, the sender must have approved this dummy contract to spend USDC.
     function batchCreateStreams(
-        uint128 perStreamAmount,
-        address[] memory _recipientsArray
+            uint128 perStreamAmount,
+            address[] memory _recipientsArray
         ) public returns (uint256[] memory streamIds) {
         // Create a batch of two streams
         uint256 batchSize = 2;
