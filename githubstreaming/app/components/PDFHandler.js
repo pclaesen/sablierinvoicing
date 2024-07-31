@@ -1,13 +1,10 @@
-import { PDFDocument, StandardFonts, rgb, PDFName, PDFArray } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, PDFName, PDFArray, parseDate } from 'pdf-lib';
 import { ethers } from 'ethers';
 
-export async function createPdf(confirmedRequestData, txHash, blockExplorer, fileName = 'invoice.pdf') {
+export async function createPdf(confirmedRequestData, txHash, blockExplorer, invoiceNumber, fileName = 'invoice.pdf') {
   try {
-    const currentDate = new Date(Date.now());
-    const year = currentDate.getFullYear();
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const day = String(currentDate.getDate()).padStart(2, '0');
-    const date = `${year}-${month}-${day}`;
+    const currentDate = new Date();
+    const formattedDate = currentDate.toLocaleDateString()
 
     const pdfDoc = await PDFDocument.create();
     const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
@@ -15,15 +12,15 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
     const { width, height } = page.getSize();
     const fontSize = 12;
 
-    page.drawText('Issue date: ' + date, {
-      x: 450,
-      y: height - 1 * fontSize,
+    page.drawText('Invoice number: ' + invoiceNumber, {
+      x: 50,
+      y: height - 2 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       color: rgb(0, 0, 0),
     });
-
-    page.drawText('Paid on: ' + confirmedRequestData.contentData.dueDate, {
+    
+    page.drawText('Issue date: ' + formattedDate, {
       x: 450,
       y: height - 2 * fontSize,
       size: fontSize,
@@ -31,9 +28,17 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
       color: rgb(0, 0, 0),
     });
 
+    page.drawText('Paid on: ' + formattedDate, {
+      x: 450,
+      y: height - 3 * fontSize,
+      size: fontSize,
+      font: timesRomanFont,
+      color: rgb(0, 0, 0),
+    });
+
     page.drawText('Request ID: ' + confirmedRequestData.requestId, {
       x: 50,
-      y: height - 4 * fontSize,
+      y: height - 5 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       color: rgb(0, 0.53, 0.71),
@@ -41,7 +46,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
 
     page.drawText('Customer: ' + confirmedRequestData.payer.value, {
       x: 50,
-      y: height - 6 * fontSize,
+      y: height - 7 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       color: rgb(0, 0, 0),
@@ -49,29 +54,14 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
 
     page.drawText('Payee: ' + confirmedRequestData.payee.value, {
       x: 50,
-      y: height - 7 * fontSize,
-      size: fontSize,
-      font: timesRomanFont,
-      color: rgb(0, 0, 0),
-    });
-
-    // page.drawText('Token address: ' + confirmedRequestData.currencyInfo.value, {
-    //   x: 50,
-    //   y: height - 8 * fontSize,
-    //   size: fontSize,
-    //   font: timesRomanFont,
-    //   color: rgb(0, 0, 0),
-    // });
-
-    page.drawText('Amount: ' + ethers.utils.formatUnits(confirmedRequestData.expectedAmount, 6) + ' USDC', {
-      x: 50,
       y: height - 8 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       color: rgb(0, 0, 0),
     });
 
-    page.drawText('Note: ' + confirmedRequestData.contentData.reason, {
+    let amountWei = confirmedRequestData.expectedAmount / 10e6;
+    page.drawText('Amount: ' + ethers.utils.formatUnits(amountWei, 6) + ' USDC', {
       x: 50,
       y: height - 9 * fontSize,
       size: fontSize,
@@ -79,14 +69,13 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, fil
       color: rgb(0, 0, 0),
     });
 
-    const linkText = 'View transaction on block explorer';
+    const linkText = 'View transaction';
     const linkUrl = `${blockExplorer}tx/${txHash}`;
     const linkWidth = timesRomanFont.widthOfTextAtSize(linkText, fontSize);
-    //const linkHeight = fontSize;
 
     page.drawText(linkText, {
       x: 50,
-      y: height - 12 * fontSize,
+      y: height - 13 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       underline: true,
