@@ -30,7 +30,7 @@
   flex: 1;
   width: 100%;
   padding: 20px;
-  /* Add top padding to ensure the main content is below the fixed header */
+  text-align: left; /* Align main content to the left */
 }
 
 .button {
@@ -41,6 +41,7 @@
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  text-align: left; /* Align button text to the left */
 }
 
 .button:disabled {
@@ -51,11 +52,13 @@
 .accountInfo {
   margin-top: 10px;
   color: black;
+  text-align: left; /* Align account info to the left */
 }
 
 .requests {
   margin-top: 20px;
   color: black;
+  text-align: left; /* Align requests to the left */
 }
 
 .requestItem {
@@ -63,6 +66,7 @@
   padding: 10px;
   margin-bottom: 10px;
   border-radius: 5px;
+  text-align: left; /* Align request item to the left */
 }
 
 .loading {
@@ -77,10 +81,12 @@
   border: solid 1px;
   border-color: black;
   border-radius: 5px;
+  text-align: left; /* Align input text to the left */
 }
 
 .input::placeholder {
   color: black;
+  text-align: left; /* Align input placeholder to the left */
 }
 
 .buttonLoading {
@@ -91,4 +97,22 @@
 .buttonSuccess {
   background-color: #4CAF50; /* Green color */
   color: white;
+}
+
+/* Table styles */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left; /* Align table text to the left */
+}
+
+.table th, .table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left; /* Align table header and cell text to the left */
+}
+
+.table th {
+  background-color: #f0f0f0;
+  font-weight: bold;
 }
