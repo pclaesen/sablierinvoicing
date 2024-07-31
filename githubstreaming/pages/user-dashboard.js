@@ -103,43 +103,63 @@ const UserDashboard = ({ account }) => {
               Connected Account: {account}
             </div>
             <div className={styles.requests}>
-              <h2>Your Sablier withdrawals</h2>
+              <h2>Your Sablier Withdrawals</h2>
               {loading ? (
                 <p className={styles.loading}>Loading envio data...</p>
               ) : envioData.length > 0 ? (
-                envioData.map((data) => {
-                  const key = data.transaction_hash; // Use transaction hash as unique key
-                  return (
-                    <div key={key} className={styles.requestItem}>
-                      <p>Block Number: {data.number}</p>
-                      <p>Date and time: {new Date(data.timestamp * 1000).toLocaleString()}</p>
-                      <p>Amount: {Number((data.data) / 10e5)} {tokenDetails[`0x${data.topic3.slice(26)}`]?.symbol || "Loading..."}</p>
-                      <p>Stream ID: {Number(data.topic1)}</p>
-                      <p>Withdrawal transaction hash: {data.transaction_hash}</p>
-                      <p>Sablier contract address: {data.address}</p>
-                      <input 
-                        type="text" 
-                        value={inputValues[key] || ''} 
-                        onChange={(event) => handleInputChange(key, event)}
-                        placeholder="Enter invoice number"
-                        className={styles.input}
-                      />
-                      <button 
-                        onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash, inputValues[key] || '', key)}
-                        className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
-                        disabled={!inputValues[key] || buttonState[key] === 'loading'}
-                      >
-                        {buttonState[key] === 'loading' ? 'Creating invoice...' : buttonState[key] === 'success' ? 'Invoice Created' : 'Create Invoice'}
-                      </button>
-                    </div>
-                  );
-                })
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Block Number</th>
+                      <th>Date and Time</th>
+                      <th>Amount</th>
+                      <th>Stream ID</th>
+                      <th>Withdrawal Transaction Hash</th>
+                      <th>Sablier Contract Address</th>
+                      <th>Invoice Number</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {envioData.map((data) => {
+                      const key = data.transaction_hash; // Use transaction hash as unique key
+                      return (
+                        <tr key={key} className={styles.requestItem}>
+                          <td>{data.number}</td>
+                          <td>{new Date(data.timestamp * 1000).toLocaleString()}</td>
+                          <td>{Number((data.data) / 10e5)} {tokenDetails[`0x${data.topic3.slice(26)}`]?.symbol || "Loading..."}</td>
+                          <td>{Number(data.topic1)}</td>
+                          <td>{data.transaction_hash}</td>
+                          <td>{data.address}</td>
+                          <td>
+                            <input 
+                              type="text" 
+                              value={inputValues[key] || ''} 
+                              onChange={(event) => handleInputChange(key, event)}
+                              placeholder="Enter invoice number"
+                              className={styles.input}
+                            />
+                          </td>
+                          <td>
+                            <button 
+                              onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash, inputValues[key] || '', key)}
+                              className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                              disabled={!inputValues[key] || buttonState[key] === 'loading'}
+                            >
+                              {buttonState[key] === 'loading' ? 'Creating invoice...' : buttonState[key] === 'success' ? 'Invoice Created' : 'Create Invoice'}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               ) : (
                 <p>No previous withdrawals found.</p>
               )}
             </div>
             {/* <div className={styles.requests}>
-              <h2>Your invoices</h2>
+              <h2>Your Invoices</h2>
               {loading ? (
                 <p className={styles.loading}>Loading requests...</p>
               ) : filteredRequests.length > 0 ? (
