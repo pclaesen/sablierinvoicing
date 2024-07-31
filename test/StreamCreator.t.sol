@@ -45,8 +45,8 @@ contract StreamCreatorTest is Test {
     function test_CreateStream() public {
         recipientsArray = [bob, charlie];
         uint256[] memory streamIds = creator.batchCreateStreams(10e6, recipientsArray);
-        // console2.log("Stream 0 ID",streamIds[0]);
-        // console2.log("Stream 1 ID",streamIds[1]);
+        console2.log("Stream 0 ID",streamIds[0]);
+        console2.log("Stream 1 ID",streamIds[1]);
     }
 
     function testWithdrawFromStream() public {
@@ -77,7 +77,6 @@ contract StreamCreatorTest is Test {
         sablier.withdrawMax(10, bob);
         vm.stopPrank();
 
-        console2.log("Amount withdrawn", sablier.getWithdrawnAmount(10));
-        
+        console2.log("Amount withdrawn", sablier.getWithdrawnAmount(10));        
     }
 }
