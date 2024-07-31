@@ -21,50 +21,53 @@ contract BatchLLStreamCreator {
     function batchCreateStreams(
         uint128 perStreamAmount,
         address[] memory _recipientsArray
-    ) public returns (uint256[] memory streamIds) {
-    // Create a batch of two streams
-        uint256 batchSize = 2;
+        ) 
+        public 
+        returns (uint256[] memory streamIds)
+        {
+        // Create a batch of two streams
+            uint256 batchSize = 2;
 
-        // Calculate the combined amount of USDC assets to transfer to this contract
-        uint256 transferAmount = perStreamAmount * batchSize;
+            // Calculate the combined amount of USDC assets to transfer to this contract
+            uint256 transferAmount = perStreamAmount * batchSize;
 
-        // Transfer the provided amount of USDC tokens to this contract
-        USDC.transferFrom(msg.sender, address(this), transferAmount);
+            // Transfer the provided amount of USDC tokens to this contract
+            USDC.transferFrom(msg.sender, address(this), transferAmount);
 
-        // Approve the Batch contract to spend USDC
-        USDC.approve({ spender: address(BATCH_LOCKUP), value: transferAmount });
+            // Approve the Batch contract to spend USDC
+            USDC.approve({ spender: address(BATCH_LOCKUP), value: transferAmount });
 
-        // Declare the first stream in the batch
-        BatchLockup.CreateWithDurationsLL memory stream0;
-        stream0.sender = msg.sender; // The sender to stream the assets, he will be able to cancel the stream
-        stream0.recipient = address(_recipientsArray[0]); // The recipient of the streamed assets
-        stream0.totalAmount = perStreamAmount; // The total amount of each stream, inclusive of all fees
-        stream0.cancelable = true; // Whether the stream will be cancelable or not
-        stream0.transferable = false; // Whether the recipient can transfer the NFT or not
-        stream0.durations = LockupLinear.Durations({
-            cliff: 0 seconds, // Assets will be unlocked only after 4 weeks
-            total: 52 weeks // Setting a total duration of ~1 year
-         });
-        stream0.broker = Broker(address(0), ud60x18(0)); // Optional parameter left undefined
+            // Declare the first stream in the batch
+            BatchLockup.CreateWithDurationsLL memory stream0;
+            stream0.sender = msg.sender; // The sender to stream the assets, he will be able to cancel the stream
+            stream0.recipient = address(_recipientsArray[0]); // The recipient of the streamed assets
+            stream0.totalAmount = perStreamAmount; // The total amount of each stream, inclusive of all fees
+            stream0.cancelable = true; // Whether the stream will be cancelable or not
+            stream0.transferable = false; // Whether the recipient can transfer the NFT or not
+            stream0.durations = LockupLinear.Durations({
+                cliff: 0 seconds, // Assets will be unlocked only after 4 weeks
+                total: 52 weeks // Setting a total duration of ~1 year
+            });
+            stream0.broker = Broker(address(0), ud60x18(0)); // Optional parameter left undefined
 
-        // Declare the second stream in the batch
-        BatchLockup.CreateWithDurationsLL memory stream1;
-        stream1.sender = msg.sender; // The sender to stream the assets, he will be able to cancel the stream
-        stream1.recipient = address(_recipientsArray[1]); // The recipient of the streamed assets
-        stream1.totalAmount = perStreamAmount; // The total amount of each stream, inclusive of all fees
-        stream1.cancelable = false; // Whether the stream will be cancelable or not
-        stream1.transferable = false; // Whether the recipient can transfer the NFT or not
-        stream1.durations = LockupLinear.Durations({
-            cliff: 0 seconds, // Assets will be unlocked only after 4 weeks
-            total: 52 weeks // Setting a total duration of ~1 year
-         });
-        stream1.broker = Broker(address(0), ud60x18(0)); // Optional parameter left undefined
+            // Declare the second stream in the batch
+            BatchLockup.CreateWithDurationsLL memory stream1;
+            stream1.sender = msg.sender; // The sender to stream the assets, he will be able to cancel the stream
+            stream1.recipient = address(_recipientsArray[1]); // The recipient of the streamed assets
+            stream1.totalAmount = perStreamAmount; // The total amount of each stream, inclusive of all fees
+            stream1.cancelable = false; // Whether the stream will be cancelable or not
+            stream1.transferable = false; // Whether the recipient can transfer the NFT or not
+            stream1.durations = LockupLinear.Durations({
+                cliff: 0 seconds, // Assets will be unlocked only after 4 weeks
+                total: 52 weeks // Setting a total duration of ~1 year
+            });
+            stream1.broker = Broker(address(0), ud60x18(0)); // Optional parameter left undefined
 
-        // Fill the batch param
-        BatchLockup.CreateWithDurationsLL[] memory batch = new BatchLockup.CreateWithDurationsLL[](batchSize);
-        batch[0] = stream0;
-        batch[1] = stream1;
+            // Fill the batch param
+            BatchLockup.CreateWithDurationsLL[] memory batch = new BatchLockup.CreateWithDurationsLL[](batchSize);
+            batch[0] = stream0;
+            batch[1] = stream1;
 
-        streamIds = BATCH_LOCKUP.createWithDurationsLL(LOCKUP_LINEAR, USDC, batch);
-    }
+            streamIds = BATCH_LOCKUP.createWithDurationsLL(LOCKUP_LINEAR, USDC, batch);
+        }
 }
