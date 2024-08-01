@@ -13,7 +13,8 @@
     "@openzeppelin/contracts": "5.0.2",
     "@prb/math": "4.0.3",
     "@sablier/v2-core": "1.2.0",
-    "@sablier/v2-periphery": "1.2.0"
+    "@sablier/v2-periphery": "1.2.0",
+    "@supabase/supabase-js": "^2.45.0"
   },
   "devDependencies": {
     "forge-std": "github:foundry-rs/forge-std#v1.8.1",

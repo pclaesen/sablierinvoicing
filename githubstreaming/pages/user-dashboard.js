@@ -2,10 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Header from '../app/components/Header';
 import styles from '../styles/page.module.css';
-import { RequestNetwork, Types } from "@requestnetwork/request-client.js";
+import { createClient } from '@supabase/supabase-js';
+import { RequestNetwork } from "@requestnetwork/request-client.js";
 import { getEnvioData } from '../app/components/EnvioData';
-import { getTokenDetails } from '../app/components/TokenLibrary'; // Ensure this path is correct
-import { handleRequest } from '../app/components/RequestHandler'; // Ensure this path is correct
+import { getTokenDetails } from '../app/components/TokenLibrary'; 
+import { handleRequest } from '../app/components/RequestHandler';
+import { checkInvoiceExists } from '../app/components/SB_Helpers';
+
+// Initialize Supabase client
+const supabaseUrl = 'https://rnogylocxdeybupnqeyt.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY; // Ensure this env variable is set
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const UserDashboard = ({ account }) => {
   const [requests, setRequests] = useState([]);
@@ -15,6 +22,7 @@ const UserDashboard = ({ account }) => {
   const [invoiceData, setInvoiceData] = useState(null);
   const [inputValues, setInputValues] = useState({});
   const [buttonState, setButtonState] = useState({});
+  const [invoiceExistsState, setInvoiceExistsState] = useState({});
 
   const router = useRouter();
 
@@ -38,11 +46,7 @@ const UserDashboard = ({ account }) => {
       handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber)
         .then((result) => {
           if (result.success) {
-            setButtonState(prevState => ({ ...prevState, [key]: 'success' }));
-            setTimeout(() => {
-              setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
-              setInputValues(prevValues => ({ ...prevValues, [key]: '' }));
-            }, 5000);
+            saveInvoiceDataToSupabase(invoiceNumber, transactionHash, key);
           } else {
             setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
           }
@@ -72,6 +76,15 @@ const UserDashboard = ({ account }) => {
       }, {});
 
       setTokenDetails(tokenDetailsMap);
+
+      // Check if invoices exist for each transaction
+      const invoiceExistsPromises = data.map(item => checkInvoiceExists(item.transaction_hash));
+      const invoiceExistsResults = await Promise.all(invoiceExistsPromises);
+      const newInvoiceExistsState = invoiceExistsResults.reduce((acc, exists, index) => {
+        acc[data[index].transaction_hash] = exists;
+        return acc;
+      }, {});
+      setInvoiceExistsState(newInvoiceExistsState);
     } catch (error) {
       console.error('Error fetching envio data:', error);
     } finally {
@@ -79,7 +92,7 @@ const UserDashboard = ({ account }) => {
     }
   }
 
-  const handleCreateInvoice = (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key) => {
+  const handleCreateInvoice = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key) => {
     setInvoiceData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key });
     setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
   };
@@ -88,10 +101,36 @@ const UserDashboard = ({ account }) => {
     setInputValues(prevValues => ({ ...prevValues, [key]: event.target.value }));
   };
 
-  const filteredRequests = requests.filter(request => 
-    (request.contentData.streamID) && 
-    (request.payee.value.toLowerCase() === account.toLowerCase() || request.payer.value.toLowerCase() === account.toLowerCase())
-  );
+  const saveInvoiceDataToSupabase = async (invoiceNumber, transactionHash, key) => {
+    const { error } = await supabase
+      .from('invoices')
+      .insert([{ invoice_number: invoiceNumber, transaction_hash: transactionHash }]);
+
+    if (error) {
+      console.error('Error saving invoice data to Supabase:', error);
+      setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+    } else {
+      console.log('Invoice data saved successfully.');
+      setInvoiceExistsState(prevState => ({ ...prevState, [transactionHash]: true }));
+      setButtonState(prevState => ({ ...prevState, [key]: 'success' }));
+      setTimeout(() => {
+        setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+        setInputValues(prevValues => ({ ...prevValues, [key]: '' }));
+      }, 5000);
+    }
+  };
+
+  const saveAccountAddressToSupabase = async (account) => {
+    const { error } = await supabase
+      .from('companyDetails')
+      .insert({ user_address: account }, { onConflict: 'user_address' });
+
+    if (error) {
+      console.error('Error saving account address to Supabase:', error);
+    } else {
+      console.log('Account address saved successfully.');
+    }
+  };
 
   return (
     <div className={styles.container}>
@@ -103,9 +142,9 @@ const UserDashboard = ({ account }) => {
               Connected Account: {account}
             </div>
             <div className={styles.requests}>
-              <h2>Your Sablier Withdrawals</h2>
+              <h2>Your Sablier withdrawals</h2>
               {loading ? (
-                <p className={styles.loading}>Loading envio data...</p>
+                <p className={styles.loading}>Loading Sablier withdrawals...</p>
               ) : envioData.length > 0 ? (
                 <table className={styles.table}>
                   <thead>
@@ -114,15 +153,15 @@ const UserDashboard = ({ account }) => {
                       <th>Date and Time</th>
                       <th>Amount</th>
                       <th>Stream ID</th>
-                      <th>Withdrawal Transaction Hash</th>
-                      <th>Sablier Contract Address</th>
+                      <th>Transaction Hash</th>
+                      <th>Contract Address</th>
                       <th>Invoice Number</th>
                       <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {envioData.map((data) => {
-                      const key = data.transaction_hash; // Use transaction hash as unique key
+                      const key = data.transaction_hash;
                       return (
                         <tr key={key} className={styles.requestItem}>
                           <td>{data.number}</td>
@@ -132,22 +171,30 @@ const UserDashboard = ({ account }) => {
                           <td>{data.transaction_hash}</td>
                           <td>{data.address}</td>
                           <td>
-                            <input 
-                              type="text" 
-                              value={inputValues[key] || ''} 
-                              onChange={(event) => handleInputChange(key, event)}
-                              placeholder="Enter invoice number"
-                              className={styles.input}
-                            />
+                            {invoiceExistsState[key] ? (
+                              <span className={styles.invoiceCreated}>View Invoice</span>
+                            ) : (
+                              <input 
+                                type="text" 
+                                value={inputValues[key] || ''} 
+                                onChange={(event) => handleInputChange(key, event)}
+                                placeholder="Enter invoice number"
+                                className={styles.input}
+                              />
+                            )}
                           </td>
                           <td>
-                            <button 
-                              onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash, inputValues[key] || '', key)}
-                              className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
-                              disabled={!inputValues[key] || buttonState[key] === 'loading'}
-                            >
-                              {buttonState[key] === 'loading' ? 'Creating invoice...' : buttonState[key] === 'success' ? 'Invoice Created' : 'Create Invoice'}
-                            </button>
+                            {invoiceExistsState[key] ? (
+                              <span className={styles.invoiceCreated}>Invoice Created</span>
+                            ) : (
+                              <button 
+                                onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash, inputValues[key] || '', key)}
+                                className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                                disabled={!inputValues[key] || buttonState[key] === 'loading'}
+                              >
+                                {buttonState[key] === 'loading' ? 'Creating invoice...' : 'Create Invoice'}
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
@@ -158,25 +205,6 @@ const UserDashboard = ({ account }) => {
                 <p>No previous withdrawals found.</p>
               )}
             </div>
-            {/* <div className={styles.requests}>
-              <h2>Your Invoices</h2>
-              {loading ? (
-                <p className={styles.loading}>Loading requests...</p>
-              ) : filteredRequests.length > 0 ? (
-                filteredRequests.map((request, index) => (
-                  <div key={index} className={styles.requestItem}>
-                    <p>Request ID: {request.requestId}</p>
-                    <p>Stream ID: {request.contentData.streamID}</p>
-                    <p>Amount: {request.expectedAmount / 10e5} USDC</p>
-                    <p>Payee: {request.payee.value}</p>
-                    <p>Payer: {request.payer.value}</p>
-                    <p>Withdrawal tx: {request.contentData.txHashWithdrawFromStream}</p>
-                  </div>
-                ))
-              ) : (
-                <p>No requests found.</p>
-              )}
-            </div> */}
           </>
         ) : (
           <p>Please connect your account to view your requests.</p>
