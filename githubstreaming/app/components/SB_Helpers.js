@@ -1,4 +1,11 @@
-const checkInvoiceExists = async (transactionHash) => {
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabaseUrl = 'https://rnogylocxdeybupnqeyt.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY; // Ensure this env variable is set
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export const checkInvoiceExists = async (transactionHash) => {
   try {
     const { data, error } = await supabase
       .from('invoices')
@@ -7,19 +14,16 @@ const checkInvoiceExists = async (transactionHash) => {
 
     if (error) {
       console.error('Error checking invoice existence:', error);
-      return false;
+      return { exists: false, invoiceNumber: null };
     }
-
-    console.log('Supabase response:', data); // Log the response
 
     if (data && data.length > 0) {
-      console.warn(`Warning: Transaction ${transactionHash} already has an invoice number: ${data[0].invoice_number}`);
-      return true;
+      return { exists: true, invoiceNumber: data[0].invoice_number };
     }
 
-    return false;
+    return { exists: false, invoiceNumber: null };
   } catch (error) {
     console.error('Unexpected error checking invoice existence:', error);
-    return false;
+    return { exists: false, invoiceNumber: null };
   }
 };

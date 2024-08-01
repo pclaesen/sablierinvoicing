@@ -77,11 +77,11 @@ const UserDashboard = ({ account }) => {
 
       setTokenDetails(tokenDetailsMap);
 
-      // Check if invoices exist for each transaction
+      // Check if invoices exist for each transaction and get invoice numbers
       const invoiceExistsPromises = data.map(item => checkInvoiceExists(item.transaction_hash));
       const invoiceExistsResults = await Promise.all(invoiceExistsPromises);
-      const newInvoiceExistsState = invoiceExistsResults.reduce((acc, exists, index) => {
-        acc[data[index].transaction_hash] = exists;
+      const newInvoiceExistsState = invoiceExistsResults.reduce((acc, result, index) => {
+        acc[data[index].transaction_hash] = result.exists ? result.invoiceNumber : null;
         return acc;
       }, {});
       setInvoiceExistsState(newInvoiceExistsState);
@@ -111,7 +111,7 @@ const UserDashboard = ({ account }) => {
       setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
     } else {
       console.log('Invoice data saved successfully.');
-      setInvoiceExistsState(prevState => ({ ...prevState, [transactionHash]: true }));
+      setInvoiceExistsState(prevState => ({ ...prevState, [transactionHash]: invoiceNumber }));
       setButtonState(prevState => ({ ...prevState, [key]: 'success' }));
       setTimeout(() => {
         setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
@@ -162,6 +162,7 @@ const UserDashboard = ({ account }) => {
                   <tbody>
                     {envioData.map((data) => {
                       const key = data.transaction_hash;
+                      const invoiceNumber = invoiceExistsState[key];
                       return (
                         <tr key={key} className={styles.requestItem}>
                           <td>{data.number}</td>
@@ -171,8 +172,8 @@ const UserDashboard = ({ account }) => {
                           <td>{data.transaction_hash}</td>
                           <td>{data.address}</td>
                           <td>
-                            {invoiceExistsState[key] ? (
-                              <span className={styles.invoiceCreated}>View Invoice</span>
+                            {invoiceNumber ? (
+                              <span className={styles.invoiceCreated}>{invoiceNumber}</span>
                             ) : (
                               <input 
                                 type="text" 
@@ -184,8 +185,8 @@ const UserDashboard = ({ account }) => {
                             )}
                           </td>
                           <td>
-                            {invoiceExistsState[key] ? (
-                              <span className={styles.invoiceCreated}>Invoice Created</span>
+                            {invoiceNumber ? (
+                              <span className={styles.invoiceCreated}>View Invoice</span>
                             ) : (
                               <button 
                                 onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash, inputValues[key] || '', key)}
