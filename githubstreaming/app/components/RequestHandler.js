@@ -90,7 +90,7 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
 
       // Create PDF after request confirmation
       await createPdf(confirmedRequestData, transactionHash, blockExplorer, invoiceNumber);
-      return { success: true, transactionHash };
+      return { success: true, transactionHash, requestId: confirmedRequestData.requestId };
     } catch (error) {
       console.error('Request handling failed', error);
       return { success: false, error: error.message };

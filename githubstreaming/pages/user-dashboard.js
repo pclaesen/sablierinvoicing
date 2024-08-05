@@ -8,6 +8,8 @@ import { getEnvioData } from '../app/components/EnvioData';
 import { getTokenDetails } from '../app/components/TokenLibrary'; 
 import { handleRequest } from '../app/components/RequestHandler';
 import { checkInvoiceExists } from '../app/components/SB_Helpers';
+import { getRequestIdData } from '../app/components/RequestIdData';
+import { createPdfRequestId} from '../app/components/CreatePDFRequestId';
 
 // Initialize Supabase client
 const supabaseUrl = 'https://rnogylocxdeybupnqeyt.supabase.co';
@@ -23,6 +25,7 @@ const UserDashboard = ({ account }) => {
   const [inputValues, setInputValues] = useState({});
   const [buttonState, setButtonState] = useState({});
   const [invoiceExistsState, setInvoiceExistsState] = useState({});
+  const [requestIdData, setRequestIdData] = useState({});
 
   const router = useRouter();
 
@@ -46,7 +49,7 @@ const UserDashboard = ({ account }) => {
       handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber)
         .then((result) => {
           if (result.success) {
-            saveInvoiceDataToSupabase(invoiceNumber, transactionHash, key);
+            saveInvoiceDataToSupabase(invoiceNumber, transactionHash, result.requestId, key);
           } else {
             setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
           }
@@ -85,6 +88,16 @@ const UserDashboard = ({ account }) => {
         return acc;
       }, {});
       setInvoiceExistsState(newInvoiceExistsState);
+
+      // Load requestId data for all transactions with an existing invoice
+      for (const transactionHash in newInvoiceExistsState) {
+        if (newInvoiceExistsState[transactionHash]) {
+          const requestId = await loadRequestIdFromSupabase(transactionHash);
+          const requestData = await getRequestIdData(requestId);
+          setRequestIdData(prevState => ({ ...prevState, [transactionHash]: requestData }));
+        }
+      }
+
     } catch (error) {
       console.error('Error fetching envio data:', error);
     } finally {
@@ -101,10 +114,10 @@ const UserDashboard = ({ account }) => {
     setInputValues(prevValues => ({ ...prevValues, [key]: event.target.value }));
   };
 
-  const saveInvoiceDataToSupabase = async (invoiceNumber, transactionHash, key) => {
+  const saveInvoiceDataToSupabase = async (invoiceNumber, transactionHash, requestId, key) => {
     const { error } = await supabase
       .from('invoices')
-      .insert([{ invoice_number: invoiceNumber, transaction_hash: transactionHash }]);
+      .insert([{ invoice_number: invoiceNumber, transaction_hash: transactionHash, request_id: requestId }]);
 
     if (error) {
       console.error('Error saving invoice data to Supabase:', error);
@@ -129,6 +142,36 @@ const UserDashboard = ({ account }) => {
       console.error('Error saving account address to Supabase:', error);
     } else {
       console.log('Account address saved successfully.');
+    }
+  };
+
+  const loadRequestIdFromSupabase = async (transactionHash) => {
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('request_id')
+        .eq('transaction_hash', transactionHash)
+        .single();
+
+      if (error) {
+        console.error('Error loading requestId from Supabase:', error);
+        return null;
+      }
+
+      return data.request_id;
+    } catch (error) {
+      console.error('Unexpected error loading requestId from Supabase:', error);
+      return null;
+    }
+  };
+
+  const handleViewInvoice = async (transactionHash) => {
+    const requestId = await loadRequestIdFromSupabase(transactionHash);
+    if (requestId) {
+      const requestData = await getRequestIdData(requestId);
+      await createPdfRequestId(requestData);
+    } else {
+      console.error('Request ID not found.');
     }
   };
 
@@ -186,7 +229,12 @@ const UserDashboard = ({ account }) => {
                           </td>
                           <td>
                             {invoiceNumber ? (
-                              <span className={styles.invoiceCreated}>View Invoice</span>
+                              <button 
+                                onClick={() => handleViewInvoice(key)}
+                                className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                              >
+                                View Invoice
+                              </button>
                             ) : (
                               <button 
                                 onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash, inputValues[key] || '', key)}
