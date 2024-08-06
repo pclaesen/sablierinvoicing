@@ -1,7 +1,8 @@
 import { PDFDocument, StandardFonts, rgb, PDFName, PDFArray } from 'pdf-lib';
 import { ethers } from 'ethers';
+import { getChainName, getBlockExplorerByName } from './ChainLibrary';
 
-export async function createPdfRequestId(requestIdData, txHash, blockExplorer, invoiceNumber, fileName = 'invoice.pdf') {
+export async function createPdfRequestId(requestIdData) {
   try {
     // Create a new PDF document
     const pdfDoc = await PDFDocument.create();
@@ -13,9 +14,19 @@ export async function createPdfRequestId(requestIdData, txHash, blockExplorer, i
     // Format the current date
     const currentDate = new Date();
     const formattedDate = currentDate.toLocaleDateString();
+
+    //const web3Provider = new Web3SignatureProvider(window.ethereum);
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    //const signer = provider.getSigner();
+    //const underlyingSablierAddress = new ethers.Contract(sablierContractAddress, sablierLockupLinearABI, signer);
+
+    const network = await provider.getNetwork();
+    const chainId = network.chainId;
+    const chainName = getChainName(chainId);
+    const blockExplorer = getBlockExplorerByName(chainName);
     
     // Draw invoice details on the PDF
-    page.drawText('Invoice number: ' + invoiceNumber, {
+    page.drawText('Invoice number: ' + requestIdData.contentData.userInvoiceNumber, {
       x: 50,
       y: height - 2 * fontSize,
       size: fontSize,
@@ -48,7 +59,7 @@ export async function createPdfRequestId(requestIdData, txHash, blockExplorer, i
       color: rgb(0, 0.53, 0.71),
     });
 
-    page.drawText('Payer: ' + requestIdData.payer, {
+    page.drawText('Payer: ' + requestIdData.payer.value, {
       x: 50,
       y: height - 7 * fontSize,
       size: fontSize,
@@ -56,7 +67,7 @@ export async function createPdfRequestId(requestIdData, txHash, blockExplorer, i
       color: rgb(0, 0, 0),
     });
 
-    page.drawText('Payee: ' + requestIdData.payee, {
+    page.drawText('Payee: ' + requestIdData.payee.value, {
       x: 50,
       y: height - 8 * fontSize,
       size: fontSize,
@@ -76,7 +87,7 @@ export async function createPdfRequestId(requestIdData, txHash, blockExplorer, i
 
     // Add link to transaction on block explorer
     const linkText = 'View transaction';
-    const linkUrl = `${blockExplorer}tx/${txHash}`;
+    const linkUrl = `${blockExplorer}tx/${requestIdData.contentData.txHashWithdrawFromStream}`;
     const linkWidth = timesRomanFont.widthOfTextAtSize(linkText, fontSize);
 
     page.drawText(linkText, {

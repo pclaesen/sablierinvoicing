@@ -4,8 +4,8 @@ import { ethers } from 'ethers';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import { RequestNetwork, Types, Utils } from '@requestnetwork/request-client.js';
 import { sablierLockupLinearABI } from '../abi/SablierLockupLinearABI';
-import { createPdf } from './PDFHandler'; // Ensure this path is correct
-import { getChainName, getBlockExplorerByName } from './ChainLibrary'; // Ensure this path is correct
+import { createPdf } from './PDFHandler';
+import { getChainName, getBlockExplorerByName } from './ChainLibrary';
 
 export const handleRequest = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber) => {
   if (typeof window.ethereum !== 'undefined') {

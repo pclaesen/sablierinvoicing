@@ -7,6 +7,6 @@ export const getRequestIdData = async (requestId) => {
     },
   });
   const request = await requestClient.fromRequestId(requestId);
-  const requestData = await request.getData();
+  const requestData = request.getData();
   return requestData;
 };
