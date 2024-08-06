@@ -1,12 +1,17 @@
-# Sablier V2 Integration Template
+# Sablier Invoicing
 
-This repository contains templates for building integrations with Sablier.
+The Sablier Invoicing app allows anyone to create a decentralised paper trail for Sablier streams.
 
-- **StreamCreator**: A template for creating a Lockup Linear stream.
+The app can be accessed [here](https://sablierinvoicing.vercel.app).
 
-For more information, refer to this guide on our documentation website:
+## Supported chains:
+| Chain        | Type |
+| -----------  | ----------- |
+| Sepolia      | Testnet       |
 
-https://docs.sablier.com/contracts/v2/guides/local-environment
+## Decentralised paper trail
+Under the hood, our app uses [Request Network](https://request.network) to store the invoice data on IPFS.
+This ensures the immutability of your invoices and allows you to always access your data.
 
 ## License
 
