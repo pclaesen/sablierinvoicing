@@ -133,17 +133,17 @@ const UserDashboard = ({ account }) => {
     }
   };
 
-  const saveAccountAddressToSupabase = async (account) => {
-    const { error } = await supabase
-      .from('companyDetails')
-      .insert({ user_address: account }, { onConflict: 'user_address' });
+  // const saveAccountAddressToSupabase = async (account) => {
+  //   const { error } = await supabase
+  //     .from('companyDetails')
+  //     .insert({ user_address: account }, { onConflict: 'user_address' });
 
-    if (error) {
-      console.error('Error saving account address to Supabase:', error);
-    } else {
-      console.log('Account address saved successfully.');
-    }
-  };
+  //   if (error) {
+  //     console.error('Error saving account address to Supabase:', error);
+  //   } else {
+  //     console.log('Account address saved successfully.');
+  //   }
+  // };
 
   const loadRequestIdFromSupabase = async (transactionHash) => {
     try {
