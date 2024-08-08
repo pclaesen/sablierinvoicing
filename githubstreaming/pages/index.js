@@ -4,6 +4,7 @@ import Header from '../app/components/Header';
 import WithdrawalHandler from '../app/components/WithdrawalHandler';
 import { createPdf } from '../app/components/PDFHandler';
 import { getEnvioData } from '@/app/components/EnvioData';
+import WalletConnectButton from '../app/components/WalletConnectButton'; // Import WalletConnectButton
 import styles from '../styles/page.module.css';
 import { useRouter } from 'next/router';
 
@@ -13,19 +14,6 @@ const HomePage = ({ account, setAccount }) => {
   const [txHash, setTxHash] = useState('');
   const [blockExplorer, setBlockExplorer] = useState('');
   const router = useRouter();
-
-  const connectWallet = async () => {
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        setAccount(accounts[0]);
-      } catch (error) {
-        console.error('Connection failed:', error);
-      }
-    } else {
-      console.error('MetaMask is not installed');
-    }
-  };
 
   const handleCreatePdf = async () => {
     if (confirmedRequestData) {
@@ -43,9 +31,7 @@ const HomePage = ({ account, setAccount }) => {
   return (
     <div className={styles.container}>
       {!account ? (
-        <button onClick={connectWallet} className={styles.button}>
-          Connect Wallet
-        </button>
+        <WalletConnectButton onAccountChange={setAccount} /> // Use WalletConnectButton
       ) : (
         <>
           <Header />
@@ -57,26 +43,9 @@ const HomePage = ({ account, setAccount }) => {
             setBlockExplorer={setBlockExplorer}
             confirmedRequestData={confirmedRequestData}
           />
-          {/* <button 
-            onClick={handleCreatePdf} 
-            className={styles.button} 
-            disabled={!confirmedRequestData}
-            style={{
-              backgroundColor: !confirmedRequestData ? 'grey' : '',
-              cursor: !confirmedRequestData ? 'not-allowed' : 'pointer',
-            }}
-          >
-            Create PDF
-          </button> */}
           <div className={styles.accountInfo}>
             Connected Account: {account}
           </div>
-          {/* <button onClick={goToDashboard} className={styles.button}>
-            Go to Dashboard
-          </button>
-          <button onClick={() => getEnvioData(account)} className={styles.button}>
-            Envio
-          </button> */}
         </>
       )}
     </div>

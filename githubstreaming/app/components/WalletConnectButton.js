@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { init, useConnectWallet } from '@web3-onboard/react';
 import injectedModule from '@web3-onboard/injected-wallets';
-import styles from '../page.module.css';
+import styles from '../../styles/page.module.css';
 
 const RPC_URL = process.env.NEXT_PUBLIC_SEPOLIA_ALCHEMY_URL;
 const apiKey = '1730eff0-9d50-4382-a3fe-89f0d34a2070';
