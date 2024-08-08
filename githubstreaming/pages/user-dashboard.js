@@ -7,7 +7,7 @@ import { RequestNetwork } from "@requestnetwork/request-client.js";
 import { getEnvioData } from '../app/components/EnvioData';
 import { getTokenDetails } from '../app/components/TokenLibrary'; 
 import { handleRequest } from '../app/components/RequestHandler';
-import { checkInvoiceExists } from '../app/components/SB_Helpers';
+import { checkInvoiceExists, fetchCompanyDetails } from '../app/components/SB_Helpers';
 import { getRequestIdData } from '../app/components/RequestIdData';
 import { createPdfRequestId} from '../app/components/CreatePDFRequestId';
 
@@ -26,6 +26,7 @@ const UserDashboard = ({ account }) => {
   const [buttonState, setButtonState] = useState({});
   const [invoiceExistsState, setInvoiceExistsState] = useState({});
   const [requestIdData, setRequestIdData] = useState({});
+  const [companyDetails, setCompanyDetails] = useState(null);
 
   const router = useRouter();
 
@@ -40,6 +41,7 @@ const UserDashboard = ({ account }) => {
       router.push('/');
     } else {
       fetchEnvioData();
+      checkCompanyDetails(account);
     }
   }, [account]);
 
@@ -65,6 +67,10 @@ const UserDashboard = ({ account }) => {
     setLoading(true);
     try {
       const data = await getEnvioData(account);
+
+      // Sort data by timestamp in descending order
+      data.sort((a, b) => b.timestamp - a.timestamp);
+
       setEnvioData(data);
 
       const uniqueTokenAddresses = [...new Set(data.map(item => `0x${item.topic3.slice(26)}`))];
@@ -104,6 +110,11 @@ const UserDashboard = ({ account }) => {
       setLoading(false);
     }
   }
+
+  const checkCompanyDetails = async (account) => {
+    const data = await fetchCompanyDetails(account);
+    setCompanyDetails(data);
+  };
 
   const handleCreateInvoice = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key) => {
     setInvoiceData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key });
@@ -180,12 +191,10 @@ const UserDashboard = ({ account }) => {
                 <table className={styles.table}>
                   <thead>
                     <tr>
-                      <th>Block Number</th>
                       <th>Date and Time</th>
                       <th>Amount</th>
                       <th>Stream ID</th>
                       <th>Transaction Hash</th>
-                      <th>Contract Address</th>
                       <th>Invoice Number</th>
                       <th>Action</th>
                     </tr>
@@ -196,12 +205,10 @@ const UserDashboard = ({ account }) => {
                       const invoiceNumber = invoiceExistsState[key];
                       return (
                         <tr key={key} className={styles.requestItem}>
-                          <td>{data.number}</td>
                           <td>{new Date(data.timestamp * 1000).toLocaleString()}</td>
                           <td>{Number((data.data) / 10e5)} {tokenDetails[`0x${data.topic3.slice(26)}`]?.symbol || "Loading..."}</td>
                           <td>{Number(data.topic1)}</td>
                           <td>{data.transaction_hash}</td>
-                          <td>{data.address}</td>
                           <td>
                             {invoiceNumber ? (
                               <span className={styles.invoiceCreated}>{invoiceNumber}</span>
@@ -216,22 +223,37 @@ const UserDashboard = ({ account }) => {
                             )}
                           </td>
                           <td>
-                            {invoiceNumber ? (
-                              <button 
-                                onClick={() => handleViewInvoice(key)}
-                                className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
-                              >
-                                View Invoice
-                              </button>
-                            ) : (
-                              <button 
-                                onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash, inputValues[key] || '', key)}
-                                className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
-                                disabled={!inputValues[key] || buttonState[key] === 'loading'}
-                              >
-                                {buttonState[key] === 'loading' ? 'Creating invoice...' : 'Create Invoice'}
-                              </button>
-                            )}
+                          {invoiceNumber && companyDetails ? (
+                            <button 
+                              onClick={() => handleViewInvoice(key)}
+                              className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                            >
+                              View Invoice
+                            </button>
+                          ) : invoiceNumber && !companyDetails ? (
+                            <button 
+                              onClick={() => router.push('/user-settings')}
+                              className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                            >
+                              Insert Details
+                            </button>
+                          ) : !invoiceNumber && companyDetails ? (
+                            <button 
+                              onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash, inputValues[key] || '', key)}
+                              className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                              disabled={!inputValues[key] || buttonState[key] === 'loading'}
+                            >
+                              {buttonState[key] === 'loading' ? 'Creating invoice...' : 'Create Invoice'}
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => router.push('/user-settings')}
+                              className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                            >
+                              Insert Details
+                            </button>
+                          )}
+
                           </td>
                         </tr>
                       );

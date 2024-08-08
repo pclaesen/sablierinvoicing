@@ -3,6 +3,6 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
-  "/user-settings": "pages/user-settings.js",
-  "/user-dashboard": "pages/user-dashboard.js"
+  "/user-dashboard": "pages/user-dashboard.js",
+  "/user-settings": "pages/user-settings.js"
 }

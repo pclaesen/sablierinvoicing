@@ -21,7 +21,7 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
       const blockExplorer = getBlockExplorerByName(chainName);
 
       const streamIdDetails = await underlyingSablierAddress.getStream(Number(streamId));
-      console.log("Stream ID details:", streamIdDetails);
+      //console.log("Stream ID details:", streamIdDetails);
 
       const amountToPassInRequest = withdrawnAmount;
 
@@ -86,7 +86,7 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
 
       const request = await tempRequestClient.createRequest(requestCreateParameters);
       const confirmedRequestData = await request.waitForConfirmation();
-      console.log(confirmedRequestData);
+      //console.log(confirmedRequestData);
 
       // Create PDF after request confirmation
       await createPdf(confirmedRequestData, transactionHash, blockExplorer, invoiceNumber);

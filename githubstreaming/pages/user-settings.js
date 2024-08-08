@@ -99,72 +99,88 @@ const UserSettings = ({ account }) => {
                 ) : (
                     <form className={styles.form} onSubmit={handleSubmit}>
                         <h2 className={styles.formTitle}>Company Details</h2>
-                        <div className={styles.formGroup}>
-                            <label htmlFor="companyName">Company Name</label>
-                            <input
-                                type="text"
-                                id="companyName"
-                                value={companyName}
-                                onChange={(e) => setCompanyName(e.target.value)}
-                                required
-                                className={styles.inputField}
-                            />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label htmlFor="address">Address</label>
-                            <input
-                                type="text"
-                                id="address"
-                                value={address}
-                                onChange={(e) => setAddress(e.target.value)}
-                                required
-                                className={styles.inputField}
-                            />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label htmlFor="postalCode">Postal Code</label>
-                            <input
-                                type="text"
-                                id="postalCode"
-                                value={postalCode}
-                                onChange={(e) => setPostalCode(e.target.value)}
-                                required
-                                className={styles.inputField}
-                            />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label htmlFor="city">City</label>
-                            <input
-                                type="text"
-                                id="city"
-                                value={city}
-                                onChange={(e) => setCity(e.target.value)}
-                                required
-                                className={styles.inputField}
-                            />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label htmlFor="country">Country</label>
-                            <input
-                                type="text"
-                                id="country"
-                                value={country}
-                                onChange={(e) => setCountry(e.target.value)}
-                                required
-                                className={styles.inputField}
-                            />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label htmlFor="companyOrVatNumber">Company/VAT Number</label>
-                            <input
-                                type="text"
-                                id="companyOrVatNumber"
-                                value={companyOrVatNumber}
-                                onChange={(e) => setCompanyOrVatNumber(e.target.value)}
-                                required
-                                className={styles.inputField}
-                            />
-                        </div>
+                        <table className={styles.table}>
+                            <tbody>
+                                <tr>
+                                    <th><label htmlFor="companyName">Company Name</label></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            id="companyName"
+                                            value={companyName}
+                                            onChange={(e) => setCompanyName(e.target.value)}
+                                            required
+                                            className={styles.inputField}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><label htmlFor="address">Address</label></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            id="address"
+                                            value={address}
+                                            onChange={(e) => setAddress(e.target.value)}
+                                            required
+                                            className={styles.inputField}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><label htmlFor="postalCode">Postal Code</label></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            id="postalCode"
+                                            value={postalCode}
+                                            onChange={(e) => setPostalCode(e.target.value)}
+                                            required
+                                            className={styles.inputField}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><label htmlFor="city">City</label></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            id="city"
+                                            value={city}
+                                            onChange={(e) => setCity(e.target.value)}
+                                            required
+                                            className={styles.inputField}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><label htmlFor="country">Country</label></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            id="country"
+                                            value={country}
+                                            onChange={(e) => setCountry(e.target.value)}
+                                            required
+                                            className={styles.inputField}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><label htmlFor="companyOrVatNumber">Company/VAT Number</label></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            id="companyOrVatNumber"
+                                            value={companyOrVatNumber}
+                                            onChange={(e) => setCompanyOrVatNumber(e.target.value)}
+                                            required
+                                            className={styles.inputField}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                         <button type="submit" className={styles.submitButton}>Save</button>
                     </form>
                 )}
