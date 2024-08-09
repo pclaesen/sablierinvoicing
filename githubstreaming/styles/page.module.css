@@ -9,6 +9,7 @@
   padding: 0px;
   box-sizing: border-box;
   padding-top: 60px; /* Ensure content is not hidden behind fixed header */
+  text-align: center; /* Center content inside the container */
 }
 
 .header {
@@ -28,7 +29,7 @@
   flex: 1;
   width: 100%;
   padding: 20px;
-  text-align: left; /* Align main content to the left */
+  text-align: center; /* Center the main content */
 }
 
 .button {
@@ -39,7 +40,7 @@
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  text-align: left; /* Align button text to the left */
+  text-align: center; /* Align button text to the center */
 }
 
 .button:disabled {
@@ -50,13 +51,13 @@
 .accountInfo {
   margin-top: 10px;
   color: black;
-  text-align: left; /* Align account info to the left */
+  text-align: center; /* Center the account info */
 }
 
 .requests {
   margin-top: 20px;
   color: black;
-  text-align: left; /* Align requests to the left */
+  text-align: center; /* Center the requests */
 }
 
 .requestItem {
@@ -64,11 +65,12 @@
   padding: 10px;
   margin-bottom: 10px;
   border-radius: 5px;
-  text-align: left; /* Align request item to the left */
+  text-align: left; /* Align request item text to the left */
 }
 
 .loading {
   margin-top: 20px;
+  text-align: center; /* Center the loading indicator */
 }
 
 .input {
@@ -84,16 +86,16 @@
 
 .input::placeholder {
   color: black;
-  text-align: left; /* Align input placeholder to the left */
+  text-align: left; /* Align input placeholder text to the left */
 }
 
 .buttonLoading {
-  background-color: #ccc; /* Gray color */
+  background-color: green !important;
   cursor: not-allowed;
 }
 
 .buttonSuccess {
-  background-color: #4CAF50; /* Green color */
+  background-color: #4CAF50;
   color: white;
 }
 
@@ -101,7 +103,15 @@
 .tableContainer {
   margin-top: 20px;
   width: 100%;
-  overflow-x: auto;
+  max-width: 600px; /* Same max-width as the form */
+  background-color: #f9f9f9; /* Same background color as the form */
+  border-radius: 8px; /* Same border-radius as the form */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Same box-shadow as the form */
+  padding: 20px; /* Added padding to match the form */
+  box-sizing: border-box; /* Ensure padding is included in width */
+  text-align: left; /* Align table content to the left */
+  margin-left: auto;
+  margin-right: auto; /* Center the table container */
 }
 
 .tableTitle {
@@ -115,8 +125,8 @@
   width: 100%;
   border-collapse: collapse;
   text-align: left; /* Align table text to the left */
-  background-color: #f9f9f9;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background-color: #f9f9f9; /* Keep background color */
+  box-shadow: none; /* No additional shadow */
 }
 
 .table th, .table td {
@@ -128,6 +138,11 @@
 .table th {
   background-color: #f0f0f0;
   font-weight: bold;
+  color: black; /* Set table header text color to black */
+}
+
+.table td {
+  color: black; /* Set table cell text color to black */
 }
 
 .table tr:nth-child(even) {
@@ -146,6 +161,7 @@
   background-color: #f9f9f9;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  text-align: left; /* Align form content to the left */
 }
 
 .formTitle {
@@ -163,7 +179,7 @@
   display: block;
   margin-bottom: 5px;
   font-weight: bold;
-  color: #555;
+  color: black;
 }
 
 .inputField {
@@ -172,6 +188,8 @@
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
+  color: black;
+  background-color: white;
 }
 
 .submitButton {

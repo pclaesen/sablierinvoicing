@@ -250,7 +250,7 @@ const UserDashboard = ({ account }) => {
                               onClick={() => router.push('/user-settings')}
                               className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
                             >
-                              Insert Details
+                              Insert Company Details
                             </button>
                           )}
 
