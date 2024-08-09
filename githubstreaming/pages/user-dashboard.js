@@ -9,17 +9,16 @@ import { getTokenDetails } from '../app/components/TokenLibrary';
 import { handleRequest } from '../app/components/RequestHandler';
 import { checkInvoiceExists, fetchCompanyDetails } from '../app/components/SB_Helpers';
 import { getRequestIdData } from '../app/components/RequestIdData';
-import { createPdfRequestId} from '../app/components/CreatePDFRequestId';
+import { createPdfRequestId } from '../app/components/CreatePDFRequestId';
 
-// Initialize Supabase client
 const supabaseUrl = 'https://rnogylocxdeybupnqeyt.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY; // Ensure this env variable is set
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const UserDashboard = ({ account }) => {
   const [requests, setRequests] = useState([]);
   const [envioData, setEnvioData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Initially set to true to show loading state
   const [tokenDetails, setTokenDetails] = useState({});
   const [invoiceData, setInvoiceData] = useState(null);
   const [inputValues, setInputValues] = useState({});
@@ -29,7 +28,6 @@ const UserDashboard = ({ account }) => {
   const [companyDetails, setCompanyDetails] = useState(null);
 
   const router = useRouter();
-
   const requestClient = new RequestNetwork({
     nodeConnectionConfig: { 
       baseURL: "https://sepolia.gateway.request.network/",
@@ -40,15 +38,30 @@ const UserDashboard = ({ account }) => {
     if (!account) {
       router.push('/');
     } else {
-      fetchEnvioData();
+      // Check session storage for existing data
+      const sessionEnvioData = sessionStorage.getItem('envioData');
+      const sessionTokenDetails = sessionStorage.getItem('tokenDetails');
+      const sessionInvoiceExistsState = sessionStorage.getItem('invoiceExistsState');
+      const sessionRequestIdData = sessionStorage.getItem('requestIdData');
+
+      if (sessionEnvioData && sessionTokenDetails && sessionInvoiceExistsState && sessionRequestIdData) {
+        setEnvioData(JSON.parse(sessionEnvioData));
+        setTokenDetails(JSON.parse(sessionTokenDetails));
+        setInvoiceExistsState(JSON.parse(sessionInvoiceExistsState));
+        setRequestIdData(JSON.parse(sessionRequestIdData));
+        setLoading(false); // Loading complete
+      } else {
+        fetchEnvioData();
+      }
+
       checkCompanyDetails(account);
     }
   }, [account]);
 
   useEffect(() => {
     if (invoiceData) {
-      const { streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key } = invoiceData;
-      handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber)
+      const { streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails, key } = invoiceData;
+      handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails)
         .then((result) => {
           if (result.success) {
             saveInvoiceDataToSupabase(invoiceNumber, transactionHash, result.requestId, key);
@@ -66,58 +79,78 @@ const UserDashboard = ({ account }) => {
   async function fetchEnvioData() {
     setLoading(true);
     try {
-      const data = await getEnvioData(account);
+        // Fetch Envio Data
+        const data = await getEnvioData(account);
 
-      // Sort data by timestamp in descending order
-      data.sort((a, b) => b.timestamp - a.timestamp);
+        // Sort data by timestamp in descending order
+        data.sort((a, b) => b.timestamp - a.timestamp);
 
-      setEnvioData(data);
+        setEnvioData(data);
 
-      const uniqueTokenAddresses = [...new Set(data.map(item => `0x${item.topic3.slice(26)}`))];
-      const tokenDetails = await Promise.all(uniqueTokenAddresses.map(async (address) => {
-        const details = await getTokenDetails(address);
-        return { address, ...details };
-      }));
+        // Fetch token details
+        const uniqueTokenAddresses = [...new Set(data.map(item => `0x${item.topic3.slice(26)}`))];
+        const tokenDetails = await Promise.all(uniqueTokenAddresses.map(async (address) => {
+            const details = await getTokenDetails(address);
+            return { address, ...details };
+        }));
 
-      const tokenDetailsMap = tokenDetails.reduce((acc, curr) => {
-        acc[curr.address] = curr;
-        return acc;
-      }, {});
+        const tokenDetailsMap = tokenDetails.reduce((acc, curr) => {
+            acc[curr.address] = curr;
+            return acc;
+        }, {});
 
-      setTokenDetails(tokenDetailsMap);
+        setTokenDetails(tokenDetailsMap);
 
-      // Check if invoices exist for each transaction and get invoice numbers
-      const invoiceExistsPromises = data.map(item => checkInvoiceExists(item.transaction_hash));
-      const invoiceExistsResults = await Promise.all(invoiceExistsPromises);
-      const newInvoiceExistsState = invoiceExistsResults.reduce((acc, result, index) => {
-        acc[data[index].transaction_hash] = result.exists ? result.invoiceNumber : null;
-        return acc;
-      }, {});
-      setInvoiceExistsState(newInvoiceExistsState);
+        // Check if invoices exist for each transaction and get invoice numbers
+        const invoiceExistsPromises = data.map(item => checkInvoiceExists(item.transaction_hash));
+        const invoiceExistsResults = await Promise.all(invoiceExistsPromises);
 
-      // Load requestId data for all transactions with an existing invoice
-      for (const transactionHash in newInvoiceExistsState) {
-        if (newInvoiceExistsState[transactionHash]) {
-          const requestId = await loadRequestIdFromSupabase(transactionHash);
-          const requestData = await getRequestIdData(requestId);
-          setRequestIdData(prevState => ({ ...prevState, [transactionHash]: requestData }));
+        const newInvoiceExistsState = invoiceExistsResults.reduce((acc, result, index) => {
+            acc[data[index].transaction_hash] = result.exists ? result.invoiceNumber : null;
+            return acc;
+        }, {});
+
+        setInvoiceExistsState(newInvoiceExistsState);
+
+        // Load requestId data for all transactions with an existing invoice
+        let requestIdDataMap = {};
+        for (const transactionHash in newInvoiceExistsState) {
+            if (newInvoiceExistsState[transactionHash]) {
+                const requestId = await loadRequestIdFromSupabase(transactionHash);
+                const requestData = await getRequestIdData(requestId);
+                requestIdDataMap[transactionHash] = requestData;
+            }
         }
-      }
+
+        // Update requestIdData state
+        setRequestIdData(requestIdDataMap);
+
+        // Save processed data to session storage
+        sessionStorage.setItem('envioData', JSON.stringify(data));
+        sessionStorage.setItem('tokenDetails', JSON.stringify(tokenDetailsMap));
+        sessionStorage.setItem('invoiceExistsState', JSON.stringify(newInvoiceExistsState));
+        sessionStorage.setItem('requestIdData', JSON.stringify(requestIdDataMap));
 
     } catch (error) {
-      console.error('Error fetching envio data:', error);
+        console.error('Error fetching envio data:', error);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   }
 
   const checkCompanyDetails = async (account) => {
     const data = await fetchCompanyDetails(account);
     setCompanyDetails(data);
+    console.log('Company Details:', data); // Ensure data is logged
   };
 
-  const handleCreateInvoice = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key) => {
-    setInvoiceData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key });
+  const handleCreateInvoice = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails, key) => {
+    if (!companyDetails) {
+      console.error('Company details are not available.');
+      return;
+    }
+
+    setInvoiceData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails, key });
     setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
   };
 
@@ -141,6 +174,11 @@ const UserDashboard = ({ account }) => {
         setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
         setInputValues(prevValues => ({ ...prevValues, [key]: '' }));
       }, 5000);
+
+      // Update session storage after saving new invoice data
+      const updatedInvoiceExistsState = { ...invoiceExistsState, [transactionHash]: invoiceNumber };
+      sessionStorage.setItem('invoiceExistsState', JSON.stringify(updatedInvoiceExistsState));
+      setInvoiceExistsState(updatedInvoiceExistsState);
     }
   };
 
@@ -165,6 +203,11 @@ const UserDashboard = ({ account }) => {
   };
 
   const handleViewInvoice = async (transactionHash) => {
+    if (!companyDetails) {
+      console.error('Company details are not available.');
+      return;
+    }
+
     const requestId = await loadRequestIdFromSupabase(transactionHash);
     if (requestId) {
       const requestData = await getRequestIdData(requestId);
@@ -178,15 +221,15 @@ const UserDashboard = ({ account }) => {
     <div className={styles.container}>
       <Header />
       <div className={styles.main}>
+        Your Sablier withdrawals
         {account ? (
           <>
             <div className={styles.accountInfo}>
               Connected Account: {account}
             </div>
             <div className={styles.requests}>
-              <h2>Your Sablier withdrawals</h2>
               {loading ? (
-                <p className={styles.loading}>Loading Sablier withdrawals...</p>
+                <p>Loading data...</p>
               ) : envioData.length > 0 ? (
                 <table className={styles.table}>
                   <thead>
@@ -253,7 +296,6 @@ const UserDashboard = ({ account }) => {
                               Insert Company Details
                             </button>
                           )}
-
                           </td>
                         </tr>
                       );
