@@ -144,21 +144,32 @@ const UserDashboard = ({ account }) => {
     console.log('Company Details:', data); // Ensure data is logged
   };
 
-  const handleCreateInvoice = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails, key) => {
+  const handleCreateInvoice = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key) => {
     if (!companyDetails) {
       console.error('Company details are not available.');
+      setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
       return;
     }
   
-    // Set the button state to loading and disable the button
+    // Set the button state to loading
     setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
   
     try {
-      // Set invoice data to trigger the effect and start creating the invoice
-      setInvoiceData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails, key });
+      // Start creating the invoice
+      const result = await handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails);
+      
+      if (result.success) {
+        await saveInvoiceDataToSupabase(invoiceNumber, transactionHash, result.requestId, key);
+      } else {
+        throw new Error('Invoice creation failed');
+      }
     } catch (error) {
       console.error('Error creating invoice:', error);
-      // Reset button state to default on error and enable the button
+      // Check if the error is due to user rejection
+      if (error.code === 4001 || error.message.includes('user rejected transaction')) {
+        console.log('Transaction was cancelled by the user');
+      }
+      // Reset button state to default on error or cancellation
       setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
     }
   };
@@ -292,17 +303,14 @@ const UserDashboard = ({ account }) => {
                               </button>
                             ) : !invoiceNumber && companyDetails ? (
                               <button 
-                                onClick={async () => {
-                                  setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
-                                  await handleCreateInvoice(
-                                    Number(data.topic1), 
-                                    Number((data.data) * 10e6), 
-                                    data.address, 
-                                    data.transaction_hash, 
-                                    inputValues[key] || '', 
-                                    key
-                                  );
-                                }}
+                                onClick={() => handleCreateInvoice(
+                                  Number(data.topic1), 
+                                  Number((data.data) * 10e6), 
+                                  data.address, 
+                                  data.transaction_hash, 
+                                  inputValues[key] || '', 
+                                  key
+                                )}
                                 className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
                                 disabled={!inputValues[key] || buttonState[key] === 'loading'}
                               >
