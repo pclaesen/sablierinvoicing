@@ -159,7 +159,7 @@ const UserDashboard = ({ account }) => {
       const result = await handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails);
       
       if (result.success) {
-        await saveInvoiceDataToSupabase(invoiceNumber, transactionHash, result.requestId, key);
+        await saveInvoiceDataToSupabase(invoiceNumber, transactionHash, result.requestId, account, key);
       } else {
         throw new Error('Invoice creation failed');
       }
@@ -179,10 +179,10 @@ const UserDashboard = ({ account }) => {
     setInputValues(prevValues => ({ ...prevValues, [key]: event.target.value }));
   };
 
-  const saveInvoiceDataToSupabase = async (invoiceNumber, transactionHash, requestId, key) => {
+  const saveInvoiceDataToSupabase = async (invoiceNumber, transactionHash, requestId, account, key) => {
     const { error } = await supabase
       .from('invoices')
-      .insert([{ invoice_number: invoiceNumber, transaction_hash: transactionHash, request_id: requestId }]);
+      .insert([{ invoice_number: invoiceNumber, transaction_hash: transactionHash, request_id: requestId, user_address: account }]);
 
     if (error) {
       console.error('Error saving invoice data to Supabase:', error);

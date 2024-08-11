@@ -47,3 +47,24 @@ export const fetchCompanyDetails = async (account) => {
     return null;
   }
 };
+
+const checkInvoiceNumberExists = async (invoiceNumber) => {
+  try {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('invoice_number')
+      .eq('invoice_number', invoiceNumber)
+      .single();
+    
+    if (error) {
+      console.error('Error checking invoice number:', error);
+      return false;
+    }
+    
+    return data !== null;
+  } catch (error) {
+    console.error('Unexpected error checking invoice number:', error);
+    return false;
+  }
+};
+
