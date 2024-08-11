@@ -149,10 +149,20 @@ const UserDashboard = ({ account }) => {
       console.error('Company details are not available.');
       return;
     }
-
-    setInvoiceData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails, key });
+  
+    // Set the button state to loading and disable the button
     setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
+  
+    try {
+      // Set invoice data to trigger the effect and start creating the invoice
+      setInvoiceData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails, key });
+    } catch (error) {
+      console.error('Error creating invoice:', error);
+      // Reset button state to default on error and enable the button
+      setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+    }
   };
+  
 
   const handleInputChange = (key, event) => {
     setInputValues(prevValues => ({ ...prevValues, [key]: event.target.value }));
@@ -266,37 +276,48 @@ const UserDashboard = ({ account }) => {
                             )}
                           </td>
                           <td>
-                          {invoiceNumber && companyDetails ? (
-                            <button 
-                              onClick={() => handleViewInvoice(key)}
-                              className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
-                            >
-                              View Invoice
-                            </button>
-                          ) : invoiceNumber && !companyDetails ? (
-                            <button 
-                              onClick={() => router.push('/user-settings')}
-                              className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
-                            >
-                              Insert Details
-                            </button>
-                          ) : !invoiceNumber && companyDetails ? (
-                            <button 
-                              onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash, inputValues[key] || '', key)}
-                              className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
-                              disabled={!inputValues[key] || buttonState[key] === 'loading'}
-                            >
-                              {buttonState[key] === 'loading' ? 'Creating invoice...' : 'Create Invoice'}
-                            </button>
-                          ) : (
-                            <button 
-                              onClick={() => router.push('/user-settings')}
-                              className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
-                            >
-                              Insert Company Details
-                            </button>
-                          )}
+                            {invoiceNumber && companyDetails ? (
+                              <button 
+                                onClick={() => handleViewInvoice(key)}
+                                className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                              >
+                                View Invoice
+                              </button>
+                            ) : invoiceNumber && !companyDetails ? (
+                              <button 
+                                onClick={() => router.push('/user-settings')}
+                                className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                              >
+                                Insert Details
+                              </button>
+                            ) : !invoiceNumber && companyDetails ? (
+                              <button 
+                                onClick={async () => {
+                                  setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
+                                  await handleCreateInvoice(
+                                    Number(data.topic1), 
+                                    Number((data.data) * 10e6), 
+                                    data.address, 
+                                    data.transaction_hash, 
+                                    inputValues[key] || '', 
+                                    key
+                                  );
+                                }}
+                                className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                                disabled={!inputValues[key] || buttonState[key] === 'loading'}
+                              >
+                                {buttonState[key] === 'loading' ? 'Creating Invoice...' : 'Create Invoice'}
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => router.push('/user-settings')}
+                                className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                              >
+                                Insert Company Details
+                              </button>
+                            )}
                           </td>
+
                         </tr>
                       );
                     })}
