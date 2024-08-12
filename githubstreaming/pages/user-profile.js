@@ -12,16 +12,29 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const UserSettings = ({ account }) => {
     const [companyDetails, setCompanyDetails] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [companyName, setCompanyName] = useState('');
+    const [address, setAddress] = useState('');
+    const [postalCode, setPostalCode] = useState('');
+    const [city, setCity] = useState('');
+    const [country, setCountry] = useState('');
+    const [companyOrVatNumber, setCompanyOrVatNumber] = useState('');
     const router = useRouter();
 
     useEffect(() => {
         if (!account) {
             router.push('/');
         } else {
-            const storedCompanyDetails = localStorage.getItem('companyDetails');
+            const storedCompanyDetails = sessionStorage.getItem('companyDetails');
 
             if (storedCompanyDetails) {
-                setCompanyDetails(JSON.parse(storedCompanyDetails));
+                const parsedDetails = JSON.parse(storedCompanyDetails);
+                setCompanyDetails(parsedDetails);
+                setCompanyName(parsedDetails?.company_name || '');
+                setAddress(parsedDetails?.address || '');
+                setPostalCode(parsedDetails?.postal_code || '');
+                setCity(parsedDetails?.city || '');
+                setCountry(parsedDetails?.country || '');
+                setCompanyOrVatNumber(parsedDetails?.company_vat_number || '');
                 setLoading(false);  // Data is immediately available
             } else {
                 loadCompanyDetails(account);
@@ -33,9 +46,15 @@ const UserSettings = ({ account }) => {
         setLoading(true);  // Show loading while fetching data
         const data = await fetchCompanyDetails(account);
 
-        // Save the data to both state and local storage
+        // Save the data to both state and session storage
         setCompanyDetails(data);
-        localStorage.setItem('companyDetails', JSON.stringify(data));
+        setCompanyName(data?.company_name || '');
+        setAddress(data?.address || '');
+        setPostalCode(data?.postal_code || '');
+        setCity(data?.city || '');
+        setCountry(data?.country || '');
+        setCompanyOrVatNumber(data?.company_vat_number || '');
+        sessionStorage.setItem('companyDetails', JSON.stringify(data));
         setLoading(false);  // Data has been loaded
     };
 
@@ -79,27 +98,27 @@ const UserSettings = ({ account }) => {
                                 <tbody>
                                     <tr>
                                         <th>Company Name</th>
-                                        <td>{companyDetails.company_name}</td>
+                                        <td>{companyDetails?.company_name}</td>
                                     </tr>
                                     <tr>
                                         <th>Address</th>
-                                        <td>{companyDetails.address}</td>
+                                        <td>{companyDetails?.address}</td>
                                     </tr>
                                     <tr>
                                         <th>Postal Code</th>
-                                        <td>{companyDetails.postal_code}</td>
+                                        <td>{companyDetails?.postal_code}</td>
                                     </tr>
                                     <tr>
                                         <th>City</th>
-                                        <td>{companyDetails.city}</td>
+                                        <td>{companyDetails?.city}</td>
                                     </tr>
                                     <tr>
                                         <th>Country</th>
-                                        <td>{companyDetails.country}</td>
+                                        <td>{companyDetails?.country}</td>
                                     </tr>
                                     <tr>
                                         <th>Company/VAT Number</th>
-                                        <td>{companyDetails.company_vat_number}</td>
+                                        <td>{companyDetails?.company_vat_number}</td>
                                     </tr>
                                 </tbody>
                             </table>

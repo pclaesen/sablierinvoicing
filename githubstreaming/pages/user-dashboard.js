@@ -141,7 +141,7 @@ const UserDashboard = ({ account }) => {
   const checkCompanyDetails = async (account) => {
     const data = await fetchCompanyDetails(account);
     setCompanyDetails(data);
-    console.log('Company Details:', data); // Ensure data is logged
+    //console.log('Company Details:', data); // Ensure data is logged
   };
 
   const handleCreateInvoice = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key) => {
@@ -307,7 +307,7 @@ const UserDashboard = ({ account }) => {
                               </button>
                             ) : invoiceNumber && !companyDetails ? (
                               <button 
-                                onClick={() => router.push('/user-settings')}
+                                onClick={() => router.push('/user-profile')}
                                 className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
                               >
                                 Insert Details
@@ -329,7 +329,7 @@ const UserDashboard = ({ account }) => {
                               </button>
                             ) : (
                               <button 
-                                onClick={() => router.push('/user-settings')}
+                                onClick={() => router.push('/user-profile')}
                                 className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
                               >
                                 Insert Company Details
