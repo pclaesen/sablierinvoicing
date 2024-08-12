@@ -2,6 +2,30 @@ import { PDFDocument, StandardFonts, rgb, PDFName, PDFArray } from 'pdf-lib';
 import { ethers } from 'ethers';
 import { fetchCompanyDetails } from './SB_Helpers';
 
+async function drawTable(page, x, y, columnWidths, rows, font, fontSize, smallFontSize) {
+  const rowHeight = fontSize * 1.2; // Reduced row height for tighter spacing
+  let currentY = y;
+
+  rows.forEach(row => {
+    let currentX = x;
+    row.forEach((cell, i) => {
+      const isSmallText = (i === 1 && (cell.includes('0x') || cell.includes('@'))); // Apply smaller font for addresses and emails
+      page.drawText(cell, {
+        x: currentX,
+        y: currentY,
+        size: isSmallText ? smallFontSize : fontSize, // Use small font size for specific cells
+        font: font,
+        color: rgb(0, 0, 0),
+      });
+      currentX += columnWidths[i];
+    });
+    currentY -= rowHeight;
+  });
+}
+
+
+
+
 export async function createPdf(confirmedRequestData, txHash, blockExplorer, invoiceNumber, fileName = 'invoice.pdf') {
   try {
     const currentDate = new Date();
@@ -11,24 +35,20 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, inv
     const payerAddress = confirmedRequestData.payer.value.toLowerCase();
     const payeeAddress = confirmedRequestData.payee.value.toLowerCase();
 
-    // Log the lowercase values for debugging
-    console.log('Payer Address (Lowercase):', payerAddress);
-    console.log('Payee Address (Lowercase):', payeeAddress);
-
     // Fetch company details for payer and payee
     const payerDetails = await fetchCompanyDetails(payerAddress);
     const payeeDetails = await fetchCompanyDetails(payeeAddress);
 
-    // Log the fetched details for debugging
-    console.log('Fetched Payer Details:', payerDetails);
-    console.log('Fetched Payee Details:', payeeDetails);
-
     const pdfDoc = await PDFDocument.create();
     const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-    const page = pdfDoc.addPage();
+    
+    // Set the page size to A4
+    const page = pdfDoc.addPage([595.28, 841.89]); // A4 dimensions in points
     const { width, height } = page.getSize();
-    const fontSize = 12;
+    const fontSize = 8;
+    const smallFontSize = 6; // Smaller font size for EVM addresses and emails
 
+    // Draw text information at the top
     page.drawText('Invoice number: ' + invoiceNumber, {
       x: 50,
       y: height - 2 * fontSize,
@@ -38,7 +58,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, inv
     });
 
     page.drawText('Issue date: ' + formattedDate, {
-      x: 450,
+      x: width - 150, // Adjusted for A4 width
       y: height - 2 * fontSize,
       size: fontSize,
       font: timesRomanFont,
@@ -46,7 +66,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, inv
     });
 
     page.drawText('Paid on: ' + formattedDate, {
-      x: 450,
+      x: width - 150, // Adjusted for A4 width
       y: height - 3 * fontSize,
       size: fontSize,
       font: timesRomanFont,
@@ -61,64 +81,41 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, inv
       color: rgb(0, 0.53, 0.71),
     });
 
-    page.drawText('Customer: ' + confirmedRequestData.payer.value, {
-      x: 50,
-      y: height - 7 * fontSize,
-      size: fontSize,
-      font: timesRomanFont,
-      color: rgb(0, 0, 0),
-    });
+    // Define table column widths and data
+    const leftTableX = 50;
+    const rightTableX = width / 2 + 20; // Adjusted for A4 width
+    const tableColumnWidths = [100, width / 2 - 120]; // Adjusted column widths for smaller spacing
 
-    // Add payer company details if available
-    if (payerDetails) {
-      page.drawText('Payer Company: ' + payerDetails.company_name, {
-        x: 50,
-        y: height - 8 * fontSize,
-        size: fontSize,
-        font: timesRomanFont,
-        color: rgb(0, 0, 0),
-      });
+    // Payee information table
+    const payeeRows = [
+      ['SUPPLIER:'],
+      ['Payee Company:', payeeDetails?.company_name || 'N/A'],
+      ['Payee Address:', payeeDetails?.address || 'N/A'],
+      ['Payee City:', payeeDetails?.city || 'N/A'],
+      ['Payee Postal Code:', payeeDetails?.postal_code || 'N/A'],
+      ['Payee Country:', payeeDetails?.country || 'N/A'],
+      ['Payee VAT/Company Nr.:', payeeDetails?.company_vat_number || 'N/A'],
+      ['Payee EVM address:', confirmedRequestData.payee.value],
+    ];
+    drawTable(page, leftTableX, height - 7 * fontSize, tableColumnWidths, payeeRows, timesRomanFont, fontSize, smallFontSize);
 
-      page.drawText('Payer Email: ' + payerDetails.email, {
-        x: 50,
-        y: height - 9 * fontSize,
-        size: fontSize,
-        font: timesRomanFont,
-        color: rgb(0, 0, 0),
-      });
-    }
-
-    page.drawText('Payee: ' + confirmedRequestData.payee.value, {
-      x: 50,
-      y: height - 10 * fontSize,
-      size: fontSize,
-      font: timesRomanFont,
-      color: rgb(0, 0, 0),
-    });
-
-    // Add payee company details if available
-    if (payeeDetails) {
-      page.drawText('Payee Company: ' + payeeDetails.company_name, {
-        x: 50,
-        y: height - 11 * fontSize,
-        size: fontSize,
-        font: timesRomanFont,
-        color: rgb(0, 0, 0),
-      });
-
-      page.drawText('Payee Email: ' + payeeDetails.email, {
-        x: 50,
-        y: height - 12 * fontSize,
-        size: fontSize,
-        font: timesRomanFont,
-        color: rgb(0, 0, 0),
-      });
-    }
+    // Customer information table
+    const payerRows = [
+      ['CUSTOMER:'],
+      ['Customer Company:', payerDetails?.company_name || 'N/A'],
+      ['Customer Address:', payerDetails?.address || 'N/A'],
+      ['Customer City:', payerDetails?.city || 'N/A'],
+      ['Customer Postal Code:', payerDetails?.postal_code || 'N/A'],
+      ['Customer Country:', payerDetails?.country || 'N/A'],
+      ['Customer VAT/Company Nr.:', payerDetails?.company_vat_number || 'N/A'],
+      ['Customer EVM address:', confirmedRequestData.payer.value],
+    ];
+    drawTable(page, rightTableX, height - 7 * fontSize, tableColumnWidths, payerRows, timesRomanFont, fontSize, smallFontSize);
 
     let amountWei = confirmedRequestData.expectedAmount / 10e6;
     page.drawText('Amount: ' + ethers.utils.formatUnits(amountWei, 6) + ' USDC', {
       x: 50,
-      y: height - 13 * fontSize,
+      y: height - 16 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       color: rgb(0, 0, 0),
@@ -130,7 +127,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, inv
 
     page.drawText(linkText, {
       x: 50,
-      y: height - 17 * fontSize,
+      y: height - 18 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       underline: true,

@@ -48,7 +48,7 @@ export const fetchCompanyDetails = async (account) => {
   }
 };
 
-const checkInvoiceNumberExists = async (invoiceNumber) => {
+export const checkInvoiceNumberExists = async (invoiceNumber) => {
   try {
     const { data, error } = await supabase
       .from('invoices')

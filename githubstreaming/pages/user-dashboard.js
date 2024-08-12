@@ -7,7 +7,7 @@ import { RequestNetwork } from "@requestnetwork/request-client.js";
 import { getEnvioData } from '../app/components/EnvioData';
 import { getTokenDetails } from '../app/components/TokenLibrary'; 
 import { handleRequest } from '../app/components/RequestHandler';
-import { checkInvoiceExists, fetchCompanyDetails } from '../app/components/SB_Helpers';
+import { checkInvoiceExists, checkInvoiceNumberExists, fetchCompanyDetails } from '../app/components/SB_Helpers';
 import { getRequestIdData } from '../app/components/RequestIdData';
 import { createPdfRequestId } from '../app/components/CreatePDFRequestId';
 
@@ -155,6 +155,16 @@ const UserDashboard = ({ account }) => {
     setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
   
     try {
+      // Check if the invoice number already exists
+      const invoiceNumberExists = await checkInvoiceNumberExists(invoiceNumber);
+  
+      if (invoiceNumberExists) {
+        console.error('Invoice number already exists.');
+        alert('The invoice number already exists. Please use a different one.');
+        setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+        return;
+      }
+  
       // Start creating the invoice
       const result = await handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails);
       
@@ -173,6 +183,7 @@ const UserDashboard = ({ account }) => {
       setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
     }
   };
+  
   
 
   const handleInputChange = (key, event) => {
