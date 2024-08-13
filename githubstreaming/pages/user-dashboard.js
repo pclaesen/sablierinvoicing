@@ -10,6 +10,7 @@ import { handleRequest } from '../app/components/RequestHandler';
 import { checkInvoiceExists, checkInvoiceNumberExists, fetchCompanyDetails } from '../app/components/SB_Helpers';
 import { getRequestIdData } from '../app/components/RequestIdData';
 import { createPdfRequestId } from '../app/components/CreatePDFRequestId';
+import CustomerDetailsModal from '../app/components/CustomerDetailsModal'; // Import the modal
 
 const supabaseUrl = 'https://rnogylocxdeybupnqeyt.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY;
@@ -26,6 +27,8 @@ const UserDashboard = ({ account }) => {
   const [invoiceExistsState, setInvoiceExistsState] = useState({});
   const [requestIdData, setRequestIdData] = useState({});
   const [companyDetails, setCompanyDetails] = useState(null);
+  const [showModal, setShowModal] = useState(false); // Manage modal visibility
+  const [modalTransactionData, setModalTransactionData] = useState(null); // Data for modal
 
   const router = useRouter();
   const requestClient = new RequestNetwork({
@@ -144,73 +147,45 @@ const UserDashboard = ({ account }) => {
     //console.log('Company Details:', data); // Ensure data is logged
   };
 
+  // Define the handleInputChange function to manage the invoice number inputs
+  const handleInputChange = (key, event) => {
+    const value = event.target.value;
+    setInputValues((prevValues) => ({
+      ...prevValues,
+      [key]: value,
+    }));
+  };
+
   const handleCreateInvoice = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key) => {
     if (!companyDetails) {
       console.error('Company details are not available.');
-      setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
       return;
     }
-  
-    // Set the button state to loading
-    setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
-  
-    try {
-      // Check if the invoice number already exists
-      const invoiceNumberExists = await checkInvoiceNumberExists(invoiceNumber);
-  
-      if (invoiceNumberExists) {
-        console.error('Invoice number already exists.');
-        alert('The invoice number already exists. Please use a different one.');
-        setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
-        return;
-      }
-  
-      // Start creating the invoice
-      const result = await handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails);
-      
-      if (result.success) {
-        await saveInvoiceDataToSupabase(invoiceNumber, transactionHash, result.requestId, account, key);
-      } else {
-        throw new Error('Invoice creation failed');
-      }
-    } catch (error) {
-      console.error('Error creating invoice:', error);
-      // Check if the error is due to user rejection
-      if (error.code === 4001 || error.message.includes('user rejected transaction')) {
-        console.log('Transaction was cancelled by the user');
-      }
-      // Reset button state to default on error or cancellation
-      setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
-    }
-  };
-  
-  
 
-  const handleInputChange = (key, event) => {
-    setInputValues(prevValues => ({ ...prevValues, [key]: event.target.value }));
+    setModalTransactionData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key });
+    setShowModal(true);
   };
 
   const saveInvoiceDataToSupabase = async (invoiceNumber, transactionHash, requestId, account, key) => {
-    const { error } = await supabase
-      .from('invoices')
-      .insert([{ invoice_number: invoiceNumber, transaction_hash: transactionHash, request_id: requestId, user_address: account }]);
-
-    if (error) {
-      console.error('Error saving invoice data to Supabase:', error);
-      setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+    const invoiceNumberExists = await checkInvoiceNumberExists(invoiceNumber);
+    if (invoiceNumberExists) {
+      console.error('Invoice number already exists:', invoiceNumber);
     } else {
-      console.log('Invoice data saved successfully.');
-      setInvoiceExistsState(prevState => ({ ...prevState, [transactionHash]: invoiceNumber }));
-      setButtonState(prevState => ({ ...prevState, [key]: 'success' }));
-      setTimeout(() => {
-        setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
-        setInputValues(prevValues => ({ ...prevValues, [key]: '' }));
-      }, 5000);
+      const { data, error } = await supabase
+        .from('invoices')
+        .upsert({ invoice_number: invoiceNumber, transaction_hash: transactionHash, request_id: requestId, account });
 
-      // Update session storage after saving new invoice data
-      const updatedInvoiceExistsState = { ...invoiceExistsState, [transactionHash]: invoiceNumber };
-      sessionStorage.setItem('invoiceExistsState', JSON.stringify(updatedInvoiceExistsState));
-      setInvoiceExistsState(updatedInvoiceExistsState);
+      if (error) {
+        console.error('Error saving invoice data:', error);
+      } else {
+        // Clear input value and update state after saving
+        setInputValues(prevValues => ({ ...prevValues, [key]: '' }));
+
+        // Update session storage after saving new invoice data
+        const updatedInvoiceExistsState = { ...invoiceExistsState, [transactionHash]: invoiceNumber };
+        sessionStorage.setItem('invoiceExistsState', JSON.stringify(updatedInvoiceExistsState));
+        setInvoiceExistsState(updatedInvoiceExistsState);
+      }
     }
   };
 
@@ -246,6 +221,22 @@ const UserDashboard = ({ account }) => {
       await createPdfRequestId(requestData);
     } else {
       console.error('Request ID not found.');
+    }
+  };
+
+  const handleModalClose = () => {
+    setShowModal(false);
+    setModalTransactionData(null);
+  };
+
+  const handleModalConfirm = async (transactionData, customerDetails) => {
+    if (transactionData) {
+      const { streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key } = transactionData;
+      const result = await handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, { ...companyDetails, ...customerDetails });
+      if (result.success) {
+        await saveInvoiceDataToSupabase(invoiceNumber, transactionHash, result.requestId, account, key);
+      }
+      handleModalClose(); // Close the modal after processing
     }
   };
 
@@ -336,7 +327,6 @@ const UserDashboard = ({ account }) => {
                               </button>
                             )}
                           </td>
-
                         </tr>
                       );
                     })}
@@ -351,6 +341,16 @@ const UserDashboard = ({ account }) => {
           <p>Please connect your account to view your requests.</p>
         )}
       </div>
+
+      {/* Modal component */}
+      {showModal && modalTransactionData && (
+        <CustomerDetailsModal
+          isOpen={showModal}
+          onClose={handleModalClose}
+          onConfirm={handleModalConfirm}
+          transactionData={modalTransactionData}
+        />
+      )}
     </div>
   );
 };
