@@ -10,10 +10,21 @@ export const getTokenDetails = async (tokenAddress) => {
   const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, provider);
 
   try {
-    const symbol = await tokenContract.symbol();
-    return { symbol };
+    const [symbol, decimals] = await Promise.all([
+      tokenContract.symbol(),
+      tokenContract.decimals()
+    ]);
+    return { 
+      address: tokenAddress,
+      symbol, 
+      decimals: Number(decimals)
+    };
   } catch (error) {
     console.error('Error fetching token details:', error);
-    return { symbol: 'Unknown' };
+    // return { 
+    //   address: tokenAddress,
+    //   symbol: 'Unknown', 
+    //   decimals: 6  // Default to 6 decimals as per your use case
+    // };
   }
 };
