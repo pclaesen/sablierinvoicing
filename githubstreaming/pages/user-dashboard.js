@@ -161,7 +161,17 @@ const UserDashboard = ({ account }) => {
       console.error('Company details are not available.');
       return;
     }
-
+  
+    // Check if invoice number already exists
+    const invoiceNumberExists = await checkInvoiceNumberExists(invoiceNumber);
+    if (invoiceNumberExists) {
+      console.error('Invoice number already exists:', invoiceNumber);
+      // You might want to show an error message to the user here
+      // For example:
+      alert('This invoice number already exists. Please use a different number.');
+      return;
+    }
+  
     setModalTransactionData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key });
     setShowModal(true);
   };
@@ -173,7 +183,7 @@ const UserDashboard = ({ account }) => {
     } else {
       const { data, error } = await supabase
         .from('invoices')
-        .upsert({ invoice_number: invoiceNumber, transaction_hash: transactionHash, request_id: requestId, account });
+        .upsert({ invoice_number: invoiceNumber, transaction_hash: transactionHash, request_id: requestId, user_address: account });
 
       if (error) {
         console.error('Error saving invoice data:', error);
@@ -232,9 +242,25 @@ const UserDashboard = ({ account }) => {
   const handleModalConfirm = async (transactionData, customerDetails) => {
     if (transactionData) {
       const { streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key } = transactionData;
-      const result = await handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, { ...companyDetails, ...customerDetails });
+      
+      // Set button state to 'loading'
+      setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
+  
+      const result = await handleRequest(streamId, 
+        withdrawnAmount, 
+        sablierContractAddress, 
+        transactionHash, 
+        invoiceNumber, 
+        companyDetails,  // This should be the company details from state
+        customerDetails  // This is coming from the modal
+      );
       if (result.success) {
         await saveInvoiceDataToSupabase(invoiceNumber, transactionHash, result.requestId, account, key);
+        // Set button state back to 'default' after successful creation
+        setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+      } else {
+        // Set button state back to 'default' if there's an error
+        setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
       }
       handleModalClose(); // Close the modal after processing
     }
@@ -305,16 +331,16 @@ const UserDashboard = ({ account }) => {
                               </button>
                             ) : !invoiceNumber && companyDetails ? (
                               <button 
-                                onClick={() => handleCreateInvoice(
-                                  Number(data.topic1), 
-                                  Number((data.data) * 10e6), 
-                                  data.address, 
-                                  data.transaction_hash, 
-                                  inputValues[key] || '', 
-                                  key
-                                )}
-                                className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
-                                disabled={!inputValues[key] || buttonState[key] === 'loading'}
+                              onClick={() => handleCreateInvoice(
+                                Number(data.topic1), 
+                                Number((data.data) * 10e6), 
+                                data.address, 
+                                data.transaction_hash, 
+                                inputValues[key] || '', 
+                                key
+                              )}
+                              className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                              disabled={!inputValues[key] || buttonState[key] === 'loading'}
                               >
                                 {buttonState[key] === 'loading' ? 'Creating Invoice...' : 'Create Invoice'}
                               </button>

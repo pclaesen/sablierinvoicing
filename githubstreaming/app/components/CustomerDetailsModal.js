@@ -1,25 +1,37 @@
-// CustomerDetailsModal.js
-import React, { useState } from 'react';
-import styles from '../../styles/modal.module.css'; // Adjust path as needed
+import React, { useState, useEffect } from 'react';
+import styles from '../../styles/modal.module.css'; // Import the updated modal CSS file
 
 const CustomerDetailsModal = ({ isOpen, onClose, onConfirm, transactionData }) => {
-  const [companyName, setCompanyName] = useState('');
-  const [address, setAddress] = useState('');
-  const [postalCode, setPostalCode] = useState('');
-  const [city, setCity] = useState('');
-  const [country, setCountry] = useState('');
-  const [vatNumber, setVatNumber] = useState('');
+  const [customerDetails, setCustomerDetails] = useState({
+    companyName: '',
+    address: '',
+    postalCode: '',
+    city: '',
+    country: '',
+    vatNumber: ''
+  });
 
-  const handleConfirm = () => {
-    const details = {
-      companyName,
-      address,
-      postalCode,
-      city,
-      country,
-      vatNumber
-    };
-    onConfirm(transactionData, details);
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  useEffect(() => {
+    // Check if all required fields are filled
+    const isValid = customerDetails.address && customerDetails.postalCode && customerDetails.city && customerDetails.country;
+    setIsFormValid(isValid);
+  }, [customerDetails]);
+
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setCustomerDetails((prevDetails) => ({
+      ...prevDetails,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = () => {
+    if (isFormValid) {
+      onConfirm(transactionData, customerDetails);
+      onClose(); // Close the modal after confirming
+    }
   };
 
   if (!isOpen) return null;
@@ -27,33 +39,86 @@ const CustomerDetailsModal = ({ isOpen, onClose, onConfirm, transactionData }) =
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
-        <h2>Customer Details</h2>
-        <label>
-          Company Name
-          <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
-        </label>
-        <label>
-          Address
-          <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} />
-        </label>
-        <label>
-          Postal Code
-          <input type="text" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
-        </label>
-        <label>
-          City
-          <input type="text" value={city} onChange={(e) => setCity(e.target.value)} />
-        </label>
-        <label>
-          Country
-          <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} />
-        </label>
-        <label>
-          Company/VAT Number
-          <input type="text" value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} />
-        </label>
-        <button onClick={handleConfirm}>Confirm</button>
-        <button onClick={onClose}>Close</button>
+        <h2 className={styles.modalTitle}>Enter Customer Details</h2>
+        <form className={styles.modalForm}>
+          <label className={styles.formLabel}>
+            Company Name*
+            <input
+              type="text"
+              name="companyName"
+              value={customerDetails.companyName}
+              onChange={handleInputChange}
+              className={styles.formInput}
+            />
+          </label>
+          <label className={styles.formLabel}>
+            Address*
+            <input
+              type="text"
+              name="address"
+              value={customerDetails.address}
+              onChange={handleInputChange}
+              className={styles.formInput}
+              required
+            />
+          </label>
+          <label className={styles.formLabel}>
+            Postal Code*
+            <input
+              type="text"
+              name="postalCode"
+              value={customerDetails.postalCode}
+              onChange={handleInputChange}
+              className={styles.formInput}
+              required
+            />
+          </label>
+          <label className={styles.formLabel}>
+            City*
+            <input
+              type="text"
+              name="city"
+              value={customerDetails.city}
+              onChange={handleInputChange}
+              className={styles.formInput}
+              required
+            />
+          </label>
+          <label className={styles.formLabel}>
+            Country*
+            <input
+              type="text"
+              name="country"
+              value={customerDetails.country}
+              onChange={handleInputChange}
+              className={styles.formInput}
+              required
+            />
+          </label>
+          <label className={styles.formLabel}>
+            Company/VAT Number
+            <input
+              type="text"
+              name="vatNumber"
+              value={customerDetails.vatNumber}
+              onChange={handleInputChange}
+              className={styles.formInput}
+            />
+          </label>
+          <div className={styles.modalActions}>
+            <button type="button" onClick={onClose} className={styles.button}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className={`${styles.button} ${isFormValid ? styles.buttonEnabled : styles.buttonDisabled}`}
+              disabled={!isFormValid} // Disable the button if the form is not valid
+            >
+              Confirm
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

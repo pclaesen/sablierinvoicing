@@ -23,11 +23,13 @@ async function drawTable(page, x, y, columnWidths, rows, font, fontSize, smallFo
   });
 }
 
-
-
-
-export async function createPdf(confirmedRequestData, txHash, blockExplorer, invoiceNumber, fileName = 'invoice.pdf') {
+export async function createPdf(confirmedRequestData, txHash, blockExplorer, invoiceNumber, fileName = 'invoice.pdf', companyDetails, customerDetails) {
   try {
+
+    if (!companyDetails || !customerDetails) {
+      console.error('Missing company or customer details:', { companyDetails, customerDetails });
+      throw new Error('Missing company or customer details');
+    }
     const currentDate = new Date();
     const formattedDate = currentDate.toLocaleDateString();
 
@@ -102,12 +104,12 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, inv
     // Customer information table
     const payerRows = [
       ['CUSTOMER:'],
-      ['Customer Company:', payerDetails?.company_name || 'N/A'],
-      ['Customer Address:', payerDetails?.address || 'N/A'],
-      ['Customer City:', payerDetails?.city || 'N/A'],
-      ['Customer Postal Code:', payerDetails?.postal_code || 'N/A'],
-      ['Customer Country:', payerDetails?.country || 'N/A'],
-      ['Customer VAT/Company Nr.:', payerDetails?.company_vat_number || 'N/A'],
+      ['Customer Company:', customerDetails.companyName || 'N/A'],
+      ['Customer Address:', customerDetails.address || 'N/A'],
+      ['Customer City:', customerDetails.city || 'N/A'],
+      ['Customer Postal Code:', customerDetails.postalCode || 'N/A'],
+      ['Customer Country:', customerDetails.country || 'N/A'],
+      ['Customer VAT/Company Nr.:', customerDetails.vatNumber || 'N/A'],
       ['Customer EVM address:', confirmedRequestData.payer.value],
     ];
     drawTable(page, rightTableX, height - 7 * fontSize, tableColumnWidths, payerRows, timesRomanFont, fontSize, smallFontSize);
@@ -115,7 +117,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, inv
     let amountWei = confirmedRequestData.expectedAmount / 10e6;
     page.drawText('Amount: ' + ethers.utils.formatUnits(amountWei, 6) + ' USDC', {
       x: 50,
-      y: height - 16 * fontSize,
+      y: height - 17 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       color: rgb(0, 0, 0),
@@ -127,7 +129,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, inv
 
     page.drawText(linkText, {
       x: 50,
-      y: height - 18 * fontSize,
+      y: height - 19 * fontSize,
       size: fontSize,
       font: timesRomanFont,
       underline: true,
