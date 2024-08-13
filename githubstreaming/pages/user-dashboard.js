@@ -108,23 +108,25 @@ const UserDashboard = ({ account }) => {
       console.error('Company details are not available.');
       return;
     }
-
+  
     const invoiceNumberExists = await checkInvoiceNumberExists(invoiceNumber);
     if (invoiceNumberExists) {
       alert('This invoice number already exists. Please use a different number.');
       return;
     }
-
+  
     const tokenDecimals = tokenDetails[tokenAddress]?.decimals;
     const formattedAmount = Number(withdrawnAmount) / (10 ** tokenDecimals);
-
+  
     setModalTransactionData({ 
       streamId, 
-      withdrawnAmount: formattedAmount, 
+      withdrawnAmount: withdrawnAmount,  // Pass the original withdrawnAmount
+      formattedAmount: formattedAmount,  // Pass the formatted amount for display
       sablierContractAddress, 
       transactionHash, 
       invoiceNumber, 
-      key 
+      key,
+      tokenAddress  // Pass the tokenAddress
     });
     setShowModal(true);
   };
@@ -189,15 +191,36 @@ const UserDashboard = ({ account }) => {
 
   const handleModalConfirm = async (transactionData, customerDetails) => {
     if (transactionData) {
-      const { streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key } = transactionData;
+      const { streamId, withdrawnAmount, formattedAmount, sablierContractAddress, transactionHash, invoiceNumber, key, tokenAddress } = transactionData;
       
       setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
   
-      const result = await handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails, customerDetails);
-      if (result.success) {
-        await saveInvoiceDataToSupabase(invoiceNumber, transactionHash, result.requestId, account, key);
-        setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
-      } else {
+      // Ensure withdrawnAmount is a positive integer
+      const amountAsInt = BigInt(withdrawnAmount).toString();  // Ensure it's a string representation of a BigInt
+  
+      const tokenSymbol = tokenDetails[tokenAddress]?.symbol || 'Unknown';
+  
+      try {
+        const result = await handleRequest(
+          streamId, 
+          amountAsInt, 
+          formattedAmount.toString(),  // Pass the formatted amount as a string
+          tokenSymbol,
+          sablierContractAddress, 
+          transactionHash, 
+          invoiceNumber, 
+          companyDetails, 
+          customerDetails
+        );
+  
+        if (result.success) {
+          await saveInvoiceDataToSupabase(invoiceNumber, transactionHash, result.requestId, account, key);
+          setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+        } else {
+          setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+        }
+      } catch (error) {
+        console.error('Error handling request:', error);
         setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
       }
       handleModalClose();

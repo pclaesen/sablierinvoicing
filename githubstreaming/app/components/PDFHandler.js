@@ -23,7 +23,7 @@ async function drawTable(page, x, y, columnWidths, rows, font, fontSize, smallFo
   });
 }
 
-export async function createPdf(confirmedRequestData, txHash, blockExplorer, invoiceNumber, fileName = 'invoice.pdf', companyDetails, customerDetails) {
+export async function createPdf(confirmedRequestData, txHash, blockExplorer, invoiceNumber, fileName = 'invoice.pdf', companyDetails, customerDetails, formattedAmount, tokenSymbol) {
   try {
 
     if (!companyDetails || !customerDetails) {
@@ -114,8 +114,7 @@ export async function createPdf(confirmedRequestData, txHash, blockExplorer, inv
     ];
     drawTable(page, rightTableX, height - 7 * fontSize, tableColumnWidths, payerRows, timesRomanFont, fontSize, smallFontSize);
 
-    let amountWei = confirmedRequestData.expectedAmount / 10e6;
-    page.drawText('Amount: ' + ethers.utils.formatUnits(amountWei, 6) + ' USDC', {
+    page.drawText(`Amount: ${formattedAmount} ${tokenSymbol}`, {
       x: 50,
       y: height - 17 * fontSize,
       size: fontSize,

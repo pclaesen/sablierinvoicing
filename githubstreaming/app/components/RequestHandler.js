@@ -7,7 +7,7 @@ import { sablierLockupLinearABI } from '../abi/SablierLockupLinearABI';
 import { createPdf } from './PDFHandler';
 import { getChainName, getBlockExplorerByName } from './ChainLibrary';
 
-export const handleRequest = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails, customerDetails) => {
+export const handleRequest = async (streamId, withdrawnAmount, formattedAmount, tokenSymbol, sablierContractAddress, transactionHash, invoiceNumber, companyDetails, customerDetails) => {
   if (typeof window.ethereum !== 'undefined') {
     try {
       const web3Provider = new Web3SignatureProvider(window.ethereum);
@@ -86,7 +86,7 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
       const confirmedRequestData = await request.waitForConfirmation();
 
       // Create PDF after request confirmation
-      await createPdf(confirmedRequestData, transactionHash, blockExplorer, invoiceNumber, 'invoice.pdf', companyDetails, customerDetails);
+      await createPdf(confirmedRequestData, transactionHash, blockExplorer, invoiceNumber, 'invoice.pdf', companyDetails, customerDetails, formattedAmount, tokenSymbol);
       return { success: true, transactionHash, requestId: confirmedRequestData.requestId };
     } catch (error) {
       console.error('Request handling failed', error);
