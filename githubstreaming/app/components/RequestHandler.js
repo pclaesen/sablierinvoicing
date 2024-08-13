@@ -7,7 +7,7 @@ import { sablierLockupLinearABI } from '../abi/SablierLockupLinearABI';
 import { createPdf } from './PDFHandler';
 import { getChainName, getBlockExplorerByName } from './ChainLibrary';
 
-export const handleRequest = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber) => {
+export const handleRequest = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails, customerDetails) => {
   if (typeof window.ethereum !== 'undefined') {
     try {
       const web3Provider = new Web3SignatureProvider(window.ethereum);
@@ -21,7 +21,6 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
       const blockExplorer = getBlockExplorerByName(chainName);
 
       const streamIdDetails = await underlyingSablierAddress.getStream(Number(streamId));
-      console.log("Stream ID details:", streamIdDetails);
 
       const amountToPassInRequest = withdrawnAmount;
 
@@ -41,9 +40,8 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
       const payeeIdentity = streamIdObject.recipient;
       const payerIdentity = streamIdObject.sender;
 
-      // Get the current date and format it according to the user's locale
       const currentDate = new Date();
-      const formattedDate = currentDate.toLocaleDateString(); // You can customize the options here if needed
+      const formattedDate = currentDate.toLocaleDateString();
 
       const requestCreateParameters = {
         requestInfo: {
@@ -86,17 +84,17 @@ export const handleRequest = async (streamId, withdrawnAmount, sablierContractAd
 
       const request = await tempRequestClient.createRequest(requestCreateParameters);
       const confirmedRequestData = await request.waitForConfirmation();
-      console.log(confirmedRequestData);
 
       // Create PDF after request confirmation
-      await createPdf(confirmedRequestData, transactionHash, blockExplorer, invoiceNumber);
+      await createPdf(confirmedRequestData, transactionHash, blockExplorer, invoiceNumber, 'invoice.pdf', companyDetails, customerDetails);
       return { success: true, transactionHash, requestId: confirmedRequestData.requestId };
     } catch (error) {
       console.error('Request handling failed', error);
-      return { success: false, error: error.message };
+      // Rethrow the error to be caught in the calling function
+      throw error;
     }
   } else {
     console.error('No MetaMask connection found, redirecting to connection process...');
-    return { success: false, error: 'No MetaMask connection found' };
+    throw new Error('No MetaMask connection found');
   }
 };

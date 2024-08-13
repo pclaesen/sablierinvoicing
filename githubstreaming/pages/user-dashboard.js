@@ -7,28 +7,30 @@ import { RequestNetwork } from "@requestnetwork/request-client.js";
 import { getEnvioData } from '../app/components/EnvioData';
 import { getTokenDetails } from '../app/components/TokenLibrary'; 
 import { handleRequest } from '../app/components/RequestHandler';
-import { checkInvoiceExists } from '../app/components/SB_Helpers';
+import { checkInvoiceExists, checkInvoiceNumberExists, fetchCompanyDetails } from '../app/components/SB_Helpers';
 import { getRequestIdData } from '../app/components/RequestIdData';
-import { createPdfRequestId} from '../app/components/CreatePDFRequestId';
+import { createPdfRequestId } from '../app/components/CreatePDFRequestId';
+import CustomerDetailsModal from '../app/components/CustomerDetailsModal'; // Import the modal
 
-// Initialize Supabase client
 const supabaseUrl = 'https://rnogylocxdeybupnqeyt.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY; // Ensure this env variable is set
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const UserDashboard = ({ account }) => {
   const [requests, setRequests] = useState([]);
   const [envioData, setEnvioData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Initially set to true to show loading state
   const [tokenDetails, setTokenDetails] = useState({});
   const [invoiceData, setInvoiceData] = useState(null);
   const [inputValues, setInputValues] = useState({});
   const [buttonState, setButtonState] = useState({});
   const [invoiceExistsState, setInvoiceExistsState] = useState({});
   const [requestIdData, setRequestIdData] = useState({});
+  const [companyDetails, setCompanyDetails] = useState(null);
+  const [showModal, setShowModal] = useState(false); // Manage modal visibility
+  const [modalTransactionData, setModalTransactionData] = useState(null); // Data for modal
 
   const router = useRouter();
-
   const requestClient = new RequestNetwork({
     nodeConnectionConfig: { 
       baseURL: "https://sepolia.gateway.request.network/",
@@ -39,14 +41,30 @@ const UserDashboard = ({ account }) => {
     if (!account) {
       router.push('/');
     } else {
-      fetchEnvioData();
+      // Check session storage for existing data
+      const sessionEnvioData = sessionStorage.getItem('envioData');
+      const sessionTokenDetails = sessionStorage.getItem('tokenDetails');
+      const sessionInvoiceExistsState = sessionStorage.getItem('invoiceExistsState');
+      const sessionRequestIdData = sessionStorage.getItem('requestIdData');
+
+      if (sessionEnvioData && sessionTokenDetails && sessionInvoiceExistsState && sessionRequestIdData) {
+        setEnvioData(JSON.parse(sessionEnvioData));
+        setTokenDetails(JSON.parse(sessionTokenDetails));
+        setInvoiceExistsState(JSON.parse(sessionInvoiceExistsState));
+        setRequestIdData(JSON.parse(sessionRequestIdData));
+        setLoading(false); // Loading complete
+      } else {
+        fetchEnvioData();
+      }
+
+      checkCompanyDetails(account);
     }
   }, [account]);
 
   useEffect(() => {
     if (invoiceData) {
-      const { streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key } = invoiceData;
-      handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber)
+      const { streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails, key } = invoiceData;
+      handleRequest(streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, companyDetails)
         .then((result) => {
           if (result.success) {
             saveInvoiceDataToSupabase(invoiceNumber, transactionHash, result.requestId, key);
@@ -64,84 +82,120 @@ const UserDashboard = ({ account }) => {
   async function fetchEnvioData() {
     setLoading(true);
     try {
-      const data = await getEnvioData(account);
-      setEnvioData(data);
+        // Fetch Envio Data
+        const data = await getEnvioData(account);
 
-      const uniqueTokenAddresses = [...new Set(data.map(item => `0x${item.topic3.slice(26)}`))];
-      const tokenDetails = await Promise.all(uniqueTokenAddresses.map(async (address) => {
-        const details = await getTokenDetails(address);
-        return { address, ...details };
-      }));
+        // Sort data by timestamp in descending order
+        data.sort((a, b) => b.timestamp - a.timestamp);
 
-      const tokenDetailsMap = tokenDetails.reduce((acc, curr) => {
-        acc[curr.address] = curr;
-        return acc;
-      }, {});
+        setEnvioData(data);
 
-      setTokenDetails(tokenDetailsMap);
+        // Fetch token details
+        const uniqueTokenAddresses = [...new Set(data.map(item => `0x${item.topic3.slice(26)}`))];
+        const tokenDetails = await Promise.all(uniqueTokenAddresses.map(async (address) => {
+            const details = await getTokenDetails(address);
+            return { address, ...details };
+        }));
 
-      // Check if invoices exist for each transaction and get invoice numbers
-      const invoiceExistsPromises = data.map(item => checkInvoiceExists(item.transaction_hash));
-      const invoiceExistsResults = await Promise.all(invoiceExistsPromises);
-      const newInvoiceExistsState = invoiceExistsResults.reduce((acc, result, index) => {
-        acc[data[index].transaction_hash] = result.exists ? result.invoiceNumber : null;
-        return acc;
-      }, {});
-      setInvoiceExistsState(newInvoiceExistsState);
+        const tokenDetailsMap = tokenDetails.reduce((acc, curr) => {
+            acc[curr.address] = curr;
+            return acc;
+        }, {});
 
-      // Load requestId data for all transactions with an existing invoice
-      for (const transactionHash in newInvoiceExistsState) {
-        if (newInvoiceExistsState[transactionHash]) {
-          const requestId = await loadRequestIdFromSupabase(transactionHash);
-          const requestData = await getRequestIdData(requestId);
-          setRequestIdData(prevState => ({ ...prevState, [transactionHash]: requestData }));
+        setTokenDetails(tokenDetailsMap);
+
+        // Check if invoices exist for each transaction and get invoice numbers
+        const invoiceExistsPromises = data.map(item => checkInvoiceExists(item.transaction_hash));
+        const invoiceExistsResults = await Promise.all(invoiceExistsPromises);
+
+        const newInvoiceExistsState = invoiceExistsResults.reduce((acc, result, index) => {
+            acc[data[index].transaction_hash] = result.exists ? result.invoiceNumber : null;
+            return acc;
+        }, {});
+
+        setInvoiceExistsState(newInvoiceExistsState);
+
+        // Load requestId data for all transactions with an existing invoice
+        let requestIdDataMap = {};
+        for (const transactionHash in newInvoiceExistsState) {
+            if (newInvoiceExistsState[transactionHash]) {
+                const requestId = await loadRequestIdFromSupabase(transactionHash);
+                const requestData = await getRequestIdData(requestId);
+                requestIdDataMap[transactionHash] = requestData;
+            }
         }
-      }
+
+        // Update requestIdData state
+        setRequestIdData(requestIdDataMap);
+
+        // Save processed data to session storage
+        sessionStorage.setItem('envioData', JSON.stringify(data));
+        sessionStorage.setItem('tokenDetails', JSON.stringify(tokenDetailsMap));
+        sessionStorage.setItem('invoiceExistsState', JSON.stringify(newInvoiceExistsState));
+        sessionStorage.setItem('requestIdData', JSON.stringify(requestIdDataMap));
 
     } catch (error) {
-      console.error('Error fetching envio data:', error);
+        console.error('Error fetching envio data:', error);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   }
 
-  const handleCreateInvoice = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key) => {
-    setInvoiceData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key });
-    setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
+  const checkCompanyDetails = async (account) => {
+    const data = await fetchCompanyDetails(account);
+    setCompanyDetails(data);
+    //console.log('Company Details:', data); // Ensure data is logged
   };
 
+  // Define the handleInputChange function to manage the invoice number inputs
   const handleInputChange = (key, event) => {
-    setInputValues(prevValues => ({ ...prevValues, [key]: event.target.value }));
+    const value = event.target.value;
+    setInputValues((prevValues) => ({
+      ...prevValues,
+      [key]: value,
+    }));
   };
 
-  const saveInvoiceDataToSupabase = async (invoiceNumber, transactionHash, requestId, key) => {
-    const { error } = await supabase
-      .from('invoices')
-      .insert([{ invoice_number: invoiceNumber, transaction_hash: transactionHash, request_id: requestId }]);
-
-    if (error) {
-      console.error('Error saving invoice data to Supabase:', error);
-      setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
-    } else {
-      console.log('Invoice data saved successfully.');
-      setInvoiceExistsState(prevState => ({ ...prevState, [transactionHash]: invoiceNumber }));
-      setButtonState(prevState => ({ ...prevState, [key]: 'success' }));
-      setTimeout(() => {
-        setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
-        setInputValues(prevValues => ({ ...prevValues, [key]: '' }));
-      }, 5000);
+  const handleCreateInvoice = async (streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key) => {
+    if (!companyDetails) {
+      console.error('Company details are not available.');
+      return;
     }
+  
+    // Check if invoice number already exists
+    const invoiceNumberExists = await checkInvoiceNumberExists(invoiceNumber);
+    if (invoiceNumberExists) {
+      console.error('Invoice number already exists:', invoiceNumber);
+      // You might want to show an error message to the user here
+      // For example:
+      alert('This invoice number already exists. Please use a different number.');
+      return;
+    }
+  
+    setModalTransactionData({ streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key });
+    setShowModal(true);
   };
 
-  const saveAccountAddressToSupabase = async (account) => {
-    const { error } = await supabase
-      .from('companyDetails')
-      .insert({ user_address: account }, { onConflict: 'user_address' });
-
-    if (error) {
-      console.error('Error saving account address to Supabase:', error);
+  const saveInvoiceDataToSupabase = async (invoiceNumber, transactionHash, requestId, account, key) => {
+    const invoiceNumberExists = await checkInvoiceNumberExists(invoiceNumber);
+    if (invoiceNumberExists) {
+      console.error('Invoice number already exists:', invoiceNumber);
     } else {
-      console.log('Account address saved successfully.');
+      const { data, error } = await supabase
+        .from('invoices')
+        .upsert({ invoice_number: invoiceNumber, transaction_hash: transactionHash, request_id: requestId, user_address: account });
+
+      if (error) {
+        console.error('Error saving invoice data:', error);
+      } else {
+        // Clear input value and update state after saving
+        setInputValues(prevValues => ({ ...prevValues, [key]: '' }));
+
+        // Update session storage after saving new invoice data
+        const updatedInvoiceExistsState = { ...invoiceExistsState, [transactionHash]: invoiceNumber };
+        sessionStorage.setItem('invoiceExistsState', JSON.stringify(updatedInvoiceExistsState));
+        setInvoiceExistsState(updatedInvoiceExistsState);
+      }
     }
   };
 
@@ -166,6 +220,11 @@ const UserDashboard = ({ account }) => {
   };
 
   const handleViewInvoice = async (transactionHash) => {
+    if (!companyDetails) {
+      console.error('Company details are not available.');
+      return;
+    }
+
     const requestId = await loadRequestIdFromSupabase(transactionHash);
     if (requestId) {
       const requestData = await getRequestIdData(requestId);
@@ -175,29 +234,59 @@ const UserDashboard = ({ account }) => {
     }
   };
 
+  const handleModalClose = () => {
+    setShowModal(false);
+    setModalTransactionData(null);
+  };
+
+  const handleModalConfirm = async (transactionData, customerDetails) => {
+    if (transactionData) {
+      const { streamId, withdrawnAmount, sablierContractAddress, transactionHash, invoiceNumber, key } = transactionData;
+      
+      // Set button state to 'loading'
+      setButtonState(prevState => ({ ...prevState, [key]: 'loading' }));
+  
+      const result = await handleRequest(streamId, 
+        withdrawnAmount, 
+        sablierContractAddress, 
+        transactionHash, 
+        invoiceNumber, 
+        companyDetails,  // This should be the company details from state
+        customerDetails  // This is coming from the modal
+      );
+      if (result.success) {
+        await saveInvoiceDataToSupabase(invoiceNumber, transactionHash, result.requestId, account, key);
+        // Set button state back to 'default' after successful creation
+        setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+      } else {
+        // Set button state back to 'default' if there's an error
+        setButtonState(prevState => ({ ...prevState, [key]: 'default' }));
+      }
+      handleModalClose(); // Close the modal after processing
+    }
+  };
+
   return (
     <div className={styles.container}>
       <Header />
       <div className={styles.main}>
+        Your Sablier withdrawals
         {account ? (
           <>
             <div className={styles.accountInfo}>
               Connected Account: {account}
             </div>
             <div className={styles.requests}>
-              <h2>Your Sablier withdrawals</h2>
               {loading ? (
-                <p className={styles.loading}>Loading Sablier withdrawals...</p>
+                <p>Loading data...</p>
               ) : envioData.length > 0 ? (
                 <table className={styles.table}>
                   <thead>
                     <tr>
-                      <th>Block Number</th>
                       <th>Date and Time</th>
                       <th>Amount</th>
                       <th>Stream ID</th>
                       <th>Transaction Hash</th>
-                      <th>Contract Address</th>
                       <th>Invoice Number</th>
                       <th>Action</th>
                     </tr>
@@ -208,12 +297,10 @@ const UserDashboard = ({ account }) => {
                       const invoiceNumber = invoiceExistsState[key];
                       return (
                         <tr key={key} className={styles.requestItem}>
-                          <td>{data.number}</td>
                           <td>{new Date(data.timestamp * 1000).toLocaleString()}</td>
                           <td>{Number((data.data) / 10e5)} {tokenDetails[`0x${data.topic3.slice(26)}`]?.symbol || "Loading..."}</td>
                           <td>{Number(data.topic1)}</td>
                           <td>{data.transaction_hash}</td>
-                          <td>{data.address}</td>
                           <td>
                             {invoiceNumber ? (
                               <span className={styles.invoiceCreated}>{invoiceNumber}</span>
@@ -228,20 +315,41 @@ const UserDashboard = ({ account }) => {
                             )}
                           </td>
                           <td>
-                            {invoiceNumber ? (
+                            {invoiceNumber && companyDetails ? (
                               <button 
                                 onClick={() => handleViewInvoice(key)}
                                 className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
                               >
                                 View Invoice
                               </button>
+                            ) : invoiceNumber && !companyDetails ? (
+                              <button 
+                                onClick={() => router.push('/user-profile')}
+                                className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                              >
+                                Insert Details
+                              </button>
+                            ) : !invoiceNumber && companyDetails ? (
+                              <button 
+                              onClick={() => handleCreateInvoice(
+                                Number(data.topic1), 
+                                Number((data.data) * 10e6), 
+                                data.address, 
+                                data.transaction_hash, 
+                                inputValues[key] || '', 
+                                key
+                              )}
+                              className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
+                              disabled={!inputValues[key] || buttonState[key] === 'loading'}
+                              >
+                                {buttonState[key] === 'loading' ? 'Creating Invoice...' : 'Create Invoice'}
+                              </button>
                             ) : (
                               <button 
-                                onClick={() => handleCreateInvoice(Number(data.topic1), Number((data.data) * 10e6), data.address, data.transaction_hash, inputValues[key] || '', key)}
+                                onClick={() => router.push('/user-profile')}
                                 className={`${styles.button} ${buttonState[key] === 'loading' ? styles.buttonLoading : ''} ${buttonState[key] === 'success' ? styles.buttonSuccess : ''}`}
-                                disabled={!inputValues[key] || buttonState[key] === 'loading'}
                               >
-                                {buttonState[key] === 'loading' ? 'Creating invoice...' : 'Create Invoice'}
+                                Insert Company Details
                               </button>
                             )}
                           </td>
@@ -259,6 +367,16 @@ const UserDashboard = ({ account }) => {
           <p>Please connect your account to view your requests.</p>
         )}
       </div>
+
+      {/* Modal component */}
+      {showModal && modalTransactionData && (
+        <CustomerDetailsModal
+          isOpen={showModal}
+          onClose={handleModalClose}
+          onConfirm={handleModalConfirm}
+          transactionData={modalTransactionData}
+        />
+      )}
     </div>
   );
 };

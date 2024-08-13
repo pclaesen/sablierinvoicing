@@ -35,13 +35,15 @@ const HomePage = ({ account, setAccount }) => {
       ) : (
         <>
           <Header />
+          <div className={styles.accountInfo}>
+            Enter your Sepolia stream ID (25 for example) and withdraw.
+          </div>
           <WithdrawalHandler
             account={account}
             setStreamId={setStreamId}
             setConfirmedRequestData={setConfirmedRequestData}
             setTxHash={setTxHash}
             setBlockExplorer={setBlockExplorer}
-            confirmedRequestData={confirmedRequestData}
           />
           <div className={styles.accountInfo}>
             Connected Account: {account}

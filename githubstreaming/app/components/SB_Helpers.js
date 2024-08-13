@@ -27,3 +27,44 @@ export const checkInvoiceExists = async (transactionHash) => {
     return { exists: false, invoiceNumber: null };
   }
 };
+
+export const fetchCompanyDetails = async (account) => {
+  try {
+    const { data, error } = await supabase
+      .from('companyDetails')
+      .select('*')
+      .eq('user_address', account)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching company details from Supabase:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Unexpected error fetching company details:', error);
+    return null;
+  }
+};
+
+export const checkInvoiceNumberExists = async (invoiceNumber) => {
+  try {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('invoice_number')
+      .eq('invoice_number', invoiceNumber)
+      .single();
+    
+    if (error) {
+      console.error('Error checking invoice number:', error);
+      return false;
+    }
+    
+    return data !== null;
+  } catch (error) {
+    console.error('Unexpected error checking invoice number:', error);
+    return false;
+  }
+};
+

@@ -8,7 +8,7 @@ import { RequestNetwork, Types, Utils } from '@requestnetwork/request-client.js'
 import { getBlockExplorerByName, getChainName } from './ChainLibrary';
 import { createPdf } from './PDFHandler';
 
-const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData, setTxHash, setBlockExplorer, confirmedRequestData }) => {
+const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData, setTxHash, setBlockExplorer }) => {
   const [localStreamId, setLocalStreamId] = useState('');
   const [withdrawalInProgress, setWithdrawalInProgress] = useState(false); // State to track withdrawal progress
 
@@ -46,7 +46,7 @@ const WithdrawalHandler = ({ account, setStreamId, setConfirmedRequestData, setT
         setTxHash(receipt.transactionHash); // Pass txHash up to the parent
         //console.log('Withdrawn Amount:', withdrawnAmountRaw.toString());
 
-        await handleRequestHandler(withdrawnAmount, localStreamId, receipt.transactionHash);
+        //await handleRequestHandler(withdrawnAmount, localStreamId, receipt.transactionHash);
       } catch (error) {
         console.error('Request handling failed', error);
       } finally {
@@ -136,7 +136,7 @@ const handleRequestHandler = async (withdrawnAmount, streamId, txHash, blockExpl
       console.log(confirmedRequestData);
 
       setConfirmedRequestData(confirmedRequestData);
-      createPdf(confirmedRequestData);
+      //createPdf(confirmedRequestData);
     } catch (error) {
       console.error('Request handling failed', error);
     }

@@ -12,6 +12,9 @@ const Header = () => {
         <Link href="/user-dashboard" className={styles.link}>
           Dashboard
         </Link>
+        <Link href="/user-profile" className={styles.link}>
+          Profile
+        </Link>
       </nav>
     </header>
   );
