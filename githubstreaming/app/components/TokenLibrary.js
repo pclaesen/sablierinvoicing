@@ -21,10 +21,5 @@ export const getTokenDetails = async (tokenAddress) => {
     };
   } catch (error) {
     console.error('Error fetching token details:', error);
-    // return { 
-    //   address: tokenAddress,
-    //   symbol: 'Unknown', 
-    //   decimals: 6  // Default to 6 decimals as per your use case
-    // };
   }
 };

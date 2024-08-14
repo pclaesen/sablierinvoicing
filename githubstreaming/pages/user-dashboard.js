@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ethers } from 'ethers';
 import { useRouter } from 'next/router';
 import Header from '../app/components/Header';
 import styles from '../styles/page.module.css';
@@ -108,6 +109,7 @@ const UserDashboard = ({ account }) => {
       console.error('Company details are not available.');
       return;
     }
+    console.log("Withdranw amount",withdrawnAmount)
   
     const invoiceNumberExists = await checkInvoiceNumberExists(invoiceNumber);
     if (invoiceNumberExists) {
@@ -116,7 +118,8 @@ const UserDashboard = ({ account }) => {
     }
   
     const tokenDecimals = tokenDetails[tokenAddress]?.decimals;
-    const formattedAmount = Number(withdrawnAmount) / (10 ** tokenDecimals);
+    const bigNumberValue = ethers.BigNumber.from(withdrawnAmount);
+    const formattedAmount = ethers.utils.formatUnits(bigNumberValue, tokenDecimals);
   
     setModalTransactionData({ 
       streamId, 
@@ -239,7 +242,7 @@ const UserDashboard = ({ account }) => {
             </div>
             <div className={styles.requests}>
               {loading ? (
-                <p>Loading data...</p>
+                <p>Loading withdrawal data...</p>
               ) : envioData.length > 0 ? (
                 <table className={styles.table}>
                   <thead>
@@ -259,12 +262,16 @@ const UserDashboard = ({ account }) => {
                       const tokenDecimals = tokenDetails[tokenAddress]?.decimals;
                       const formattedAmount = Number(data.data) / (10 ** tokenDecimals);
                       const invoiceNumber = invoiceExistsState[key];
+                      
+                      // Trimmed Transaction Hash
+                      const trimmedHash = `${key.slice(0, 6)}...${key.slice(-6)}`;
+
                       return (
                         <tr key={key} className={styles.requestItem}>
                           <td>{new Date(data.timestamp * 1000).toLocaleString()}</td>
-                          <td>{formattedAmount.toFixed(6)} {tokenDetails[tokenAddress]?.symbol || "Loading..."}</td>
+                          <td>{formattedAmount} {tokenDetails[tokenAddress]?.symbol || "Loading..."}</td>
                           <td>{Number(data.topic1)}</td>
-                          <td>{data.transaction_hash}</td>
+                          <td>{trimmedHash}</td>
                           <td>
                             {invoiceNumber ? (
                               <span className={styles.invoiceCreated}>{invoiceNumber}</span>
